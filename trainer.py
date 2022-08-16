@@ -92,15 +92,14 @@ class HybridSGDTrainer:
         return self.history
             
     def take_step(self, node, lr):
-        steps = 1 # You can take as input parameters. Be careful with balanced step count!
+        steps = 1 
         taken_steps = 0
         model, iterator = node['model'], node['iterator']
         total_loss = 0
         while(taken_steps < steps):
             try:
                 Xb, yb = next(iterator)
-                Xb, yb = Xb.to(model.device), yb.to(model.device) #
-#                 Xb += 2*torch.randn_like(Xb)
+                Xb, yb = Xb.to(model.device), yb.to(model.device) 
                 grad, loss = model.compute_grad(Xb, yb, lr=lr)
                 model.move(grad, lr)
                 taken_steps += 1
