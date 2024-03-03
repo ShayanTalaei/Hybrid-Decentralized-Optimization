@@ -1,6 +1,7 @@
 import torch
 import argparse
 from utils import run, plot_trends
+import os
 
 # Import custom modules
 
@@ -61,5 +62,6 @@ if __name__ == "__main__":
 
     logs = run(setups, dataset_name, lr_schedule, reps=1, path=args.path, file_name=None, batch_size=args.batch_size)
 
-    name = None
+    name = 'test'
+    os.makedirs(f'{args.path}/results/{dataset_name}', exist_ok=True)
     plot_trends(logs, 'Steps', 'Training loss', 100, path=args.path, dataset_folder=dataset_name, name=name)
