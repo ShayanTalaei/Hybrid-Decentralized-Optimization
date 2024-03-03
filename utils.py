@@ -13,7 +13,7 @@ def cast(lst, dtype=torch.float32):
     return list(map(lambda x: torch.tensor(x).to(dtype), lst))
 
 
-def plot_trends(trends, x_axis, y_axis, start=0, end=float('inf'), dataset_folder=None, name=None):
+def plot_trends(trends, x_axis, y_axis, start=0, path=None, end=float('inf'), dataset_folder=None, name=None):
     fig = plt.figure()
     fig.set_facecolor('white')
     plt.xlabel(x_axis)
@@ -36,7 +36,7 @@ def plot_trends(trends, x_axis, y_axis, start=0, end=float('inf'), dataset_folde
 
     plt.legend()
     if name is not None:
-        plt.savefig(f'results/{dataset_folder}/{name}_{y_axis}_{x_axis}.pdf')
+        plt.savefig(path + f'results/{dataset_folder}/{name}_{y_axis}_{x_axis}.pdf')
     plt.show()
 
 
@@ -64,5 +64,5 @@ def run(setups, dataset_name, lr_schedule, reps=1, path=None, file_name=None, ba
             end_time = time.time()
             print("Running time: {:.4f}".format(float(end_time - start_time)))
     if file_name:
-        torch.save(results, f"results/{dataset_name}/{file_name}")
+        torch.save(results, path + f"results/{dataset_name}/{file_name}")
     return results

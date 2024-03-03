@@ -62,4 +62,4 @@ if __name__ == "__main__":
     logs = run(setups, dataset_name, lr_schedule, reps=1, path=args.path, file_name=None, batch_size=args.batch_size)
 
     name = None
-    plot_trends(logs, 'Steps', 'Training loss', 100, dataset_folder=dataset_name, name=name)
+    plot_trends(logs, 'Steps', 'Training loss', 100, path=args.path, dataset_folder=dataset_name, name=name)
