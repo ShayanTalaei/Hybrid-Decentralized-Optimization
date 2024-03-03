@@ -1,86 +1,97 @@
-import torch
 from torch.utils.data import Dataset
 from torchvision.datasets import FashionMNIST
-from torchvision.transforms import ToTensor
-import random
-import pickle
+from torchvision.datasets import MNIST, CIFAR10, CIFAR100
+from torchvision.transforms import v2
+import torch
 
-import pdb
-
-EXTRACTED_DATASETS = ['birds', 'flowers', 'cifar10', 'pets', 'food101']
-DATASETS = EXTRACTED_DATASETS + ['mnist', 'year_pred']
-
-ROOT = "../Extracted Datasets/"  # ../
-
-
-def get_batchsize(dataset_name):
-    if dataset_name in EXTRACTED_DATASETS:
-        return 128
-    elif dataset_name == "year_pred":
-        return 128
-    elif dataset_name == "fmnist":
-        return 128
+EXTRACTED_DATASETS = ['birds', 'flowers', 'pets', 'food101']
+DATASETS = EXTRACTED_DATASETS + ['fmnist', 'year_pred', 'mnist', 'cifar10', 'cifar100']
+NUM_CLASSES = {'birds': 500,
+               'flowers': 102,
+               'cifar10': 10,
+               'pets': 37,
+               'food101': 101,
+               'fmnist': 10,
+               'year_pred': 1,
+               'mnist': 10,
+               'cifar100': 100,
+               }
+INPUT_DIM = {'mnist': [1, 28, 28],
+             'fmnist': [1, 28, 28],
+             'cifar10': [3, 32, 32],
+             'cifar100': [3, 32, 32],
+             'flowers': [3, 224, 224],
+             'birds': [3, 224, 224],
+             'pets': [3, 224, 224],
+             'food101': [3, 224, 224],
+             'year_pred': [90],
+             }
 
 
 class CustomDataset(Dataset):
-    def __init__(self, X, labels):
-        self.X = X
+    def __init__(self, x, labels):
+        self.x = x
         self.labels = labels
 
     def __len__(self):
-        return len(self.X)
+        return len(self.x)
 
     def __getitem__(self, idx):
-        return self.X[idx], self.labels[idx]
+        return self.x[idx], self.labels[idx]
 
 
-def get_dataset(dataset_name, **kwargs):
-    if dataset_name in EXTRACTED_DATASETS:
-        return get_extracted_dataset(dataset_name, **kwargs)
-    elif dataset_name == "year_pred":
-        return get_year_pred_dataset()
+def get_model_shape(dataset_name):
+    assert dataset_name in DATASETS
+    return INPUT_DIM[dataset_name], NUM_CLASSES[dataset_name]
+
+
+def get_dataset(dataset_name, path=None, **kwargs):
+    if dataset_name == "mnist":
+        transform_mnist = v2.Compose([
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize((0.5,), (0.5,))
+        ])
+        dataset = MNIST(path + "data", train=True, download=True, transform=transform_mnist)
+        test_dataset = MNIST(path + "data", train=False, download=True, transform=transform_mnist)
     elif dataset_name == "fmnist":
-        return get_fashion_mnist_dataset()
+        transform_fmnist = v2.Compose([
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize((0.5,), (0.5,))
+        ])
+        dataset = FashionMNIST(path + "data", train=True, download=True, transform=transform_fmnist)
+        test_dataset = FashionMNIST(path + "data", train=False, download=True, transform=transform_fmnist)
+    elif dataset_name == "cifar10":
+        transform_cifar = v2.Compose([
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        dataset = CIFAR10(path + "data", train=True, download=True, transform=transform_cifar)
+        test_dataset = CIFAR10(path + "data", train=False, download=True, transform=transform_cifar)
+    elif dataset_name == "cifar100":
+        transform_cifar = v2.Compose([
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        dataset = CIFAR100(path + "data", train=True, download=True, transform=transform_cifar)
+        test_dataset = CIFAR100(path + "data", train=False, download=True, transform=transform_cifar)
+    elif dataset_name in EXTRACTED_DATASETS:
+        dataset, test_dataset = get_extracted_dataset(dataset_name, path, **kwargs)
+    else:
+        raise ValueError(f"Dataset {dataset_name} not implemented yet.")
+
+    input_shape = INPUT_DIM[dataset_name]
+    n_class = NUM_CLASSES[dataset_name]
+
+    return dataset, test_dataset, input_shape, n_class
 
 
-def get_extracted_dataset(dataset_name, finetuning="fully_finetuned", augmentation="unaugmented"):
-    ROOT = "Extracted Datasets/"  # ../
-    train_X, train_labels = torch.load(ROOT + f'{dataset_name}_{finetuning}_{augmentation}/' + 'train_data')
-    test_X, test_labels = torch.load(ROOT + f'{dataset_name}_{finetuning}_{augmentation}/' + 'test_data')
+def get_extracted_dataset(dataset_name, path, finetuning="fully_finetuned", augmentation="unaugmented"):
+    train_X, train_labels = torch.load(path + f'data/{dataset_name}_{finetuning}_{augmentation}/' + 'train_data')
+    test_X, test_labels = torch.load(path + f'data/{dataset_name}_{finetuning}_{augmentation}/' + 'test_data')
     train_set = CustomDataset(train_X, train_labels)
     val_set = CustomDataset(test_X, test_labels)
     return train_set, val_set
-
-
-def cast(lst, dtype=torch.float32):
-    return list(map(lambda x: torch.tensor(x).to(dtype), lst))
-
-
-def get_year_pred_dataset():
-    #     with open("../../data/YearPred/YearPredictionMSD.pickle", "rb") as f:
-    #         X, label = pickle.load(f)
-    # #     with open("../../data/YearPred/Year_Pred.pickle", "rb") as f:
-    # #         X, label = pickle.load(f)
-    # #         X = list(X)
-    # #     pdb.set_trace()
-    #     X = list(map(lambda x: torch.tensor(x).to(torch.float32), X))
-    #     label = list(map(lambda x: torch.tensor([x]).to(torch.float32), label))
-    X, label = torch.load("Extracted Datasets/year_prediction/data")
-    joint = list(zip(X, label))
-    random.shuffle(joint)
-    X, label = zip(*joint)
-
-    train_size = 2 ** 17  # 462000 #2**14
-    X_train, label_train = X[:train_size], label[:train_size]
-    X_val, label_val = X[-10000:], label[-10000:]
-
-    train_set = CustomDataset(X_train, label_train)
-    val_set = CustomDataset(X_val, label_val)
-    return train_set, val_set
-
-
-def get_fashion_mnist_dataset():
-    ROOT = "../../data/"
-    train_ds = FashionMNIST(ROOT + "Fashion MNIST/train_data", download=True, train=True, transform=ToTensor())
-    val_ds = FashionMNIST(ROOT + "Fashion MNIST/test_data", download=True, train=False, transform=ToTensor())
-    return train_ds, val_ds

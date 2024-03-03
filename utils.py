@@ -1,6 +1,16 @@
+import math
+import time
+
 import torch
 import matplotlib.pyplot as plt
-import math
+
+from trainer import HybridSGDTrainer
+from datasets import get_dataset
+from models import get_temp_state_dict
+
+
+def cast(lst, dtype=torch.float32):
+    return list(map(lambda x: torch.tensor(x).to(dtype), lst))
 
 
 def plot_trends(trends, x_axis, y_axis, start=0, end=float('inf'), dataset_folder=None, name=None):
@@ -26,5 +36,33 @@ def plot_trends(trends, x_axis, y_axis, start=0, end=float('inf'), dataset_folde
 
     plt.legend()
     if name is not None:
-        plt.savefig(f'Results/{dataset_folder}/{name}_{y_axis}_{x_axis}.pdf')
+        plt.savefig(f'results/{dataset_folder}/{name}_{y_axis}_{x_axis}.pdf')
     plt.show()
+
+
+def run(setups, dataset_name, lr_schedule, reps=1, path=None, file_name=None, batch_size=100):
+    results = {}
+    for run_number in range(1, reps + 1):
+        for case in setups:
+            case_name = case if reps == 1 else case + f" run:{run_number}"
+            results[case_name] = {}
+
+    for run_number in range(1, reps + 1):
+        train_set, test_set, input_shape, n_class = get_dataset(dataset_name, path=path)
+        initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class)
+
+        for case, population_args in setups.items():
+            print(f"\n--- Case: {case}, run number: {run_number}")
+            start_time = time.time()
+            trainer = HybridSGDTrainer(population_args,
+                                       dataset_name, train_set, test_set,
+                                       initial_state_dict, batch_size)
+            history = trainer.train(lr_schedule)
+            for key in history[0].keys():
+                case_name = case if reps == 1 else case + f" run:{run_number}"
+                results[case_name][key] = [x[key] for x in history]
+            end_time = time.time()
+            print("Running time: {:.4f}".format(float(end_time - start_time)))
+    if file_name:
+        torch.save(results, f"results/{dataset_name}/{file_name}")
+    return results
