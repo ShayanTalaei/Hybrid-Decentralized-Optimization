@@ -57,7 +57,7 @@ if __name__ == "__main__":
               '2 FO 6 ZO': [{'grad_mode': 'first order', 'count': 2},
                             {'grad_mode': 'zeroth order forward-mode AD', 'count': 6, 'random vecs': 200}]}
 
-    dataset_name = 'mnist'
+    dataset_name = args.dataset
     lr_schedule = [(200, 0.001, 10)]
 
     logs = run(setups, dataset_name, lr_schedule, reps=1, path=args.path, file_name=None, batch_size=args.batch_size)
