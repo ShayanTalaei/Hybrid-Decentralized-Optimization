@@ -379,6 +379,7 @@ class CustomNN(EnhancedModel):
             self.seq.append(nn.BatchNorm1d(hidden[i + 1]))
         if sigmoid_output:
             self.seq.append(nn.Sigmoid())
+        self.to(self.device)
 
     def forward(self, x):
         """
