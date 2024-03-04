@@ -7,12 +7,12 @@ from models import take_step, communicate, get_group_models
 class HybridSGDTrainer:
 
     def __init__(self, population_args, dataset_name, train_set, test_set,
-                 initial_state_dict, batch_size):
+                 initial_state_dict, batch_size, conv_number=2, hidden=128, num_layer=2):
         self.dataset_name = dataset_name
         self.population_args = population_args
         self.population_count, self.nodes = 0, []
         assert self.population_count % 2 == 0
-        self.setup_models(initial_state_dict)
+        self.setup_models(initial_state_dict, conv_number=conv_number, hidden=hidden, num_layer=num_layer)
 
         self.test_loader = None
         self.setup_dataloaders(train_set, test_set, batch_size)
@@ -21,9 +21,9 @@ class HybridSGDTrainer:
         self.training_loss = None
         self.history = []
 
-    def setup_models(self, initial_state_dict):
+    def setup_models(self, initial_state_dict, conv_number=2, hidden=128, num_layer=2):
         for group in self.population_args:
-            models = get_group_models(self.dataset_name, group, initial_state_dict)
+            models = get_group_models(self.dataset_name, group, initial_state_dict, conv_number=conv_number, hidden=hidden, num_layer=num_layer)
             self.population_count += group['count']
             self.nodes += [{'model': model, 'steps': 0} for model in models]
 

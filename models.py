@@ -41,14 +41,14 @@ def get_model(dataset_name, grad_mode, conv_number=2, hidden=128, num_layer=2, *
     return model
 
 
-def get_group_models(dataset_name, group, initial_state_dict, **kwargs):
+def get_group_models(dataset_name, group, initial_state_dict, conv_number=2, hidden=128, num_layer=2, **kwargs):
     count, grad_mode = group['count'], group['grad_mode']
     models = []
     for i in range(count):
         if 'zeroth order' in grad_mode:
             if 'random vecs' in group:
                 kwargs['random vecs'] = group['random vecs']
-        model = get_model(dataset_name, grad_mode, **kwargs)
+        model = get_model(dataset_name, grad_mode, conv_number=conv_number, hidden=hidden, num_layer=num_layer, **kwargs)
 
         model.load_state_dict(initial_state_dict)
         models.append(model)
