@@ -12,7 +12,11 @@ class HybridSGDTrainer:
         self.population_args = population_args
         self.population_count, self.nodes = 0, []
         assert self.population_count % 2 == 0
-        self.setup_models(initial_state_dict, conv_number=conv_number, hidden=hidden, num_layer=num_layer)
+        self.setup_models(initial_state_dict,
+                          conv_number=conv_number,
+                          hidden=hidden,
+                          num_layer=num_layer
+                          )
 
         self.test_loader = None
         self.setup_dataloaders(train_set, test_set, batch_size)
@@ -23,7 +27,12 @@ class HybridSGDTrainer:
 
     def setup_models(self, initial_state_dict, conv_number=2, hidden=128, num_layer=2):
         for group in self.population_args:
-            models = get_group_models(self.dataset_name, group, initial_state_dict, conv_number=conv_number, hidden=hidden, num_layer=num_layer)
+            models = get_group_models(self.dataset_name,
+                                      group, initial_state_dict,
+                                      conv_number=conv_number,
+                                      hidden=hidden,
+                                      num_layer=num_layer
+                                      )
             self.population_count += group['count']
             self.nodes += [{'model': model, 'steps': 0} for model in models]
 
@@ -54,11 +63,11 @@ class HybridSGDTrainer:
         if self.population_count == 1:
             return self.train_solo(lr_schedule)
 
-        population_factor = self.population_count // 2
+        population_factor = self.population_count / 2
         for steps, lr, log_period in lr_schedule:
-            steps_to_go = steps * population_factor
+            steps_to_go = int(steps * population_factor)
             for taken_steps in range(steps_to_go):
-                if self.total_steps % (log_period * population_factor) == 0:
+                if self.total_steps % int(log_period * population_factor) == 0:
                     self.evaluate()
 
                 node_1, node_2 = np.random.choice(self.nodes, size=2, replace=False)

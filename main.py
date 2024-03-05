@@ -3,14 +3,8 @@ import argparse
 from utils import run, plot_trends
 import os
 
-# Import custom modules
-
-# Main function
 if __name__ == "__main__":
-    """
-    Main function to run the script. It parses command-line arguments, loads the dataset, splits it into training and validation sets,
-    creates data loaders, sets the loss function, and performs cross-validation to find the best hyperparameters and optimizer.
-    """
+    """Main function to run the script."""
     # Create argument parser
     parser = argparse.ArgumentParser()
     # Add arguments to the parser
@@ -43,17 +37,24 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using {device}")
 
-    # Here is an example of how to initialize the setups.
-
-    setups = {'2 FO': [{'grad_mode': 'first order', 'count': 2}],
-              '6 ZO': [{'grad_mode': 'zeroth order forward-mode AD', 'count': 6, 'random vecs': 200}],
-              '2 FO 6 ZO': [{'grad_mode': 'first order', 'count': 2},
-                            {'grad_mode': 'zeroth order forward-mode AD', 'count': 6, 'random vecs': 200}]}
+    setups = {'3 FO': [{'grad_mode': 'first order', 'count': 3}],
+              '9 ZO': [{'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 200}],
+              '3 FO 9 ZO': [{'grad_mode': 'first order', 'count': 3},
+                            {'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 200}]}
 
     dataset_name = args.dataset
     lr_schedule = [(steps, lr, log_period) for steps, lr, log_period in zip(steps_ls, lrs, log_periods)]
 
-    logs = run(setups, dataset_name, lr_schedule, conv_number=args.conv_number, hidden=args.hidden, num_layer=args.num_layer, reps=1, path=args.path, file_name=None, batch_size=args.batch_size)
+    logs = run(setups,
+               dataset_name,
+               lr_schedule,
+               conv_number=args.conv_number,
+               hidden=args.hidden,
+               num_layer=args.num_layer,
+               reps=1, path=args.path,
+               file_name=None,
+               batch_size=args.batch_size
+               )
 
     name = 'test'
     os.makedirs(f'{args.path}/results/{dataset_name}', exist_ok=True)
