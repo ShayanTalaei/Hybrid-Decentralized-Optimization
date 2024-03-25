@@ -146,7 +146,7 @@ class EnhancedModel(nn.Module):
         loss = self.criterion(outputs, yb)
         #         pdb.set_trace()
         loss.backward()
-        actual_grad = [param.grad for param in self.parameters()]
+        actual_grad = [param.grad if param.grad is not None else torch.zeros_like(param) for param in self.parameters()]
         grad = torch.cat([gr.flatten() for gr in actual_grad], 0)
         if self.grad_mode == 'zeroth order forward-mode AD':
             y_vectors = torch.randn(self.random_vecs, *grad.shape, device=self.device)  # , device=self.device
