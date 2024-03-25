@@ -25,6 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="resnet", help="The model to use for training. If None, a default model is used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
 
+    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     # Parse the arguments
     args = parser.parse_args()
 
