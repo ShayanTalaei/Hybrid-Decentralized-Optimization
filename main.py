@@ -40,10 +40,10 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using {device}")
 
-    setups = {'3 FO': [{'grad_mode': 'first order', 'count': 3}],
-              '9 ZO': [{'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 200}],
+    setups = {'9 ZO': [{'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 100}],
+              '3 FO': [{'grad_mode': 'first order', 'count': 3}],
               '3 FO 9 ZO': [{'grad_mode': 'first order', 'count': 3},
-                            {'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 200}]}
+                            {'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 100}]}
 
     dataset_name = args.dataset
     lr_schedule = [(steps, lr, log_period) for steps, lr, log_period in zip(steps_ls, lrs, log_periods)]
