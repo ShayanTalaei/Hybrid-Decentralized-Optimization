@@ -8,13 +8,13 @@ if __name__ == "__main__":
     # Create argument parser
     parser = argparse.ArgumentParser()
     # Add arguments to the parser
-    parser.add_argument("--dataset", default="mnist", help="The dataset to use for training and testing.")
+    parser.add_argument("--dataset", default="cifar10", help="The dataset to use for training and testing.")
     parser.add_argument("--hidden", default=128, type=int, help="The number of hidden units in the model.")
     parser.add_argument("--num_layer", default=2, type=int, help="The number of layers in the model.")
     parser.add_argument("--conv_number", default=2, type=int, help="The number of convolutional layers in the model.")
     parser.add_argument("--batch_size", default=100, type=int, help="The batch size for training.")
     parser.add_argument("--plot", action="store_true", help="Whether to plot the training and validation curves.")
-    parser.add_argument("--lr", default="0.001", help="The list of learning rates for the optimizers.")
+    parser.add_argument("--lr", default="0.0001", help="The list of learning rates for the optimizers.")
     parser.add_argument("--steps", default="200", help="The list of learning steps for the optimizers.")
     parser.add_argument("--log_period", default="10", help="The list of log periods.")
     parser.add_argument("--activation", default="relu", help="The activation function to use in the model.")
@@ -22,6 +22,7 @@ if __name__ == "__main__":
     parser.add_argument("--path", default="./", help="The directory where the trained model should be saved.")
     parser.add_argument("--criterion", default="cross_entropy", help="The loss function to use for training.")
     parser.add_argument("--verbose", action="store_true", help="Whether to print detailed training progress.")
+    parser.add_argument("--model", default="resnet", help="The model to use for training. If None, a default model is used based on the given arguments.")
 
     # Parse the arguments
     args = parser.parse_args()
@@ -53,7 +54,8 @@ if __name__ == "__main__":
                num_layer=args.num_layer,
                reps=1, path=args.path,
                file_name=None,
-               batch_size=args.batch_size
+               batch_size=args.batch_size,
+               model=args.model
                )
 
     name = 'test'

@@ -3,14 +3,19 @@ import torch
 from torch import nn
 from torch.nn import Linear
 from copy import deepcopy
+import torchvision.models as models
+from torchvision.models import ResNet101_Weights
 
 from datasets import get_model_shape
 
 
-def get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=2, hidden=128, num_layer=2):
+def get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model=None):
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
-    model = CustomNN(input_shape, hidden_layers, grad_mode='temp', criterion=None, conv_number=conv_number)
+    if model == 'resnet':
+        model = ResNetModel(n_class, grad_mode='temp', criterion=None)
+    else:
+        model = CustomNN(input_shape, hidden_layers, grad_mode='temp', criterion=None, conv_number=conv_number)
     # if dataset_name in ['birds', 'flowers', 'pets', 'food101', 'year_pred', 'mnist', 'cifar10', 'cifar100']:
     #     model = LinearEnhancedModel(input_shape, n_class, grad_mode='temp', criterion=None)
     # elif dataset_name == "fmnist":
@@ -27,7 +32,10 @@ def get_model(dataset_name, grad_mode, conv_number=2, hidden=128, num_layer=2, *
     input_shape, n_class = get_model_shape(dataset_name)
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
-    model = CustomNN(input_shape, hidden_layers, grad_mode=grad_mode, criterion=criterion, conv_number=conv_number)
+    if kwargs['model'] == 'resnet':
+        model = ResNetModel(n_class, grad_mode=grad_mode, criterion=criterion, **kwargs)
+    else:
+        model = CustomNN(input_shape, hidden_layers, grad_mode=grad_mode, criterion=criterion, conv_number=conv_number)
 
     # if dataset_name in ['birds', 'flowers', 'pets', 'food101', 'mnist', 'cifar10', 'cifar100']:
     #     model = LinearEnhancedModel(input_shape, n_class, grad_mode=grad_mode, criterion=criterion, **kwargs)
@@ -392,3 +400,38 @@ class CustomNN(EnhancedModel):
     def _init_weights(self, module):
         module.weight.data.uniform_(-100, 100)
         module.bias.data.zero_()
+
+
+class ResNetModel(EnhancedModel):
+    """
+    Simple feedforward neural network.
+    """
+
+    def __init__(self, num_classes, grad_mode, criterion, freeze=False, **kwargs):
+        """
+        Initialize the resnet model.
+        :param num_classes: The number of classes.
+        :param grad_mode: The grad mode.
+        :param criterion: The criterion.
+        :param freeze: Whether to freeze the model except the last layer.
+        :param kwargs: Additional arguments.
+        """
+        super().__init__(grad_mode, criterion, **kwargs)
+        self.weight = ResNet101_Weights.DEFAULT
+        self.model = models.resnet101(weights=self.weight)
+        self.preprocess = self.weight.transforms()
+        if freeze:
+            for param in self.model.parameters():
+                param.requires_grad = False
+        num_ftrs = self.model.fc.in_features
+        self.model.fc = nn.Linear(num_ftrs, num_classes)
+        self.to(self.device)
+
+    def forward(self, x):
+        """
+        Forward pass.
+        :param x: The input.
+        :return: The output.
+        """
+        x = self.preprocess(x)
+        return self.model(x)
