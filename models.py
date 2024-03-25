@@ -120,7 +120,7 @@ class EnhancedModel(nn.Module):
         self.past_move = None
         self.acc_def = "class number"
         if 'zeroth order' in grad_mode:
-            self.random_vecs = kwargs.get('random vecs', 100)
+            self.random_vecs = kwargs.get('random vecs', 50)
         device_name = kwargs.get("device name", 'cuda:0' if torch.cuda.is_available() else 'cpu')
         self.device = torch.device(device_name)
         self.to(self.device)

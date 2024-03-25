@@ -63,6 +63,10 @@ def run(setups, dataset_name, lr_schedule, conv_number=2, hidden=128, num_layer=
                 case_name = case if reps == 1 else case + f" run:{run_number}"
                 results[case_name][key] = [x[key] for x in history]
             end_time = time.time()
+            del trainer
+            torch.cuda.empty_cache()
+            import gc
+            gc.collect()
             print("Running time: {:.4f}".format(float(end_time - start_time)))
     if file_name:
         torch.save(results, path + f"results/{dataset_name}/{file_name}")
