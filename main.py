@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("--criterion", default="cross_entropy", help="The loss function to use for training.")
     parser.add_argument("--verbose", action="store_true", help="Whether to print detailed training progress.")
     parser.add_argument("--model", default="resnet", help="The model to use for training. If None, a default model is used based on the given arguments.")
+    parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
 
     # Parse the arguments
     args = parser.parse_args()
@@ -55,7 +56,8 @@ if __name__ == "__main__":
                reps=1, path=args.path,
                file_name=None,
                batch_size=args.batch_size,
-               model=args.model
+               model=args.model,
+               freeze_model=args.freeze_model,
                )
 
     name = 'test'

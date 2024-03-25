@@ -4,16 +4,16 @@ from torch import nn
 from torch.nn import Linear
 from copy import deepcopy
 import torchvision.models as models
-from torchvision.models import ResNet101_Weights
+from torchvision.models import ResNet101_Weights, ResNet50_Weights
 
 from datasets import get_model_shape
 
 
-def get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model=None):
+def get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model=None, freeze_model=False):
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
     if model == 'resnet':
-        model = ResNetModel(n_class, grad_mode='temp', criterion=None)
+        model = ResNetModel(n_class, grad_mode='temp', criterion=None, freeze=freeze_model)
     else:
         model = CustomNN(input_shape, hidden_layers, grad_mode='temp', criterion=None, conv_number=conv_number)
     # if dataset_name in ['birds', 'flowers', 'pets', 'food101', 'year_pred', 'mnist', 'cifar10', 'cifar100']:
@@ -33,7 +33,7 @@ def get_model(dataset_name, grad_mode, conv_number=2, hidden=128, num_layer=2, *
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
     if kwargs['model'] == 'resnet':
-        model = ResNetModel(n_class, grad_mode=grad_mode, criterion=criterion, **kwargs)
+        model = ResNetModel(n_class, grad_mode=grad_mode, criterion=criterion, freeze=kwargs['freeze_model'], **kwargs)
     else:
         model = CustomNN(input_shape, hidden_layers, grad_mode=grad_mode, criterion=criterion, conv_number=conv_number)
 
@@ -417,8 +417,8 @@ class ResNetModel(EnhancedModel):
         :param kwargs: Additional arguments.
         """
         super().__init__(grad_mode, criterion, **kwargs)
-        self.weight = ResNet101_Weights.DEFAULT
-        self.model = models.resnet101(weights=self.weight)
+        self.weight = ResNet50_Weights.DEFAULT
+        self.model = models.resnet50(weights=self.weight)
         self.preprocess = self.weight.transforms()
         if freeze:
             for param in self.model.parameters():

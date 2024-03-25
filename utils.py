@@ -40,7 +40,7 @@ def plot_trends(trends, x_axis, y_axis, start=0, path=None, end=float('inf'), da
     plt.show()
 
 
-def run(setups, dataset_name, lr_schedule, conv_number=2, hidden=128, num_layer=2, reps=1, path=None, file_name=None, batch_size=100, model=None):
+def run(setups, dataset_name, lr_schedule, conv_number=2, hidden=128, num_layer=2, reps=1, path=None, file_name=None, batch_size=100, model=None, freeze_model=False):
     results = {}
     for run_number in range(1, reps + 1):
         for case in setups:
@@ -49,7 +49,7 @@ def run(setups, dataset_name, lr_schedule, conv_number=2, hidden=128, num_layer=
 
     for run_number in range(1, reps + 1):
         train_set, test_set, input_shape, n_class = get_dataset(dataset_name, path=path)
-        initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=conv_number, hidden=hidden, num_layer=num_layer, model=model)
+        initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=conv_number, hidden=hidden, num_layer=num_layer, model=model, freeze_model=freeze_model)
 
         for case, population_args in setups.items():
             print(f"\n--- Case: {case}, run number: {run_number}")
@@ -57,7 +57,7 @@ def run(setups, dataset_name, lr_schedule, conv_number=2, hidden=128, num_layer=
             trainer = HybridSGDTrainer(population_args,
                                        dataset_name, train_set, test_set,
                                        initial_state_dict, batch_size,
-                                       conv_number=conv_number, hidden=hidden, num_layer=num_layer, model=model)
+                                       conv_number=conv_number, hidden=hidden, num_layer=num_layer, model=model, freeze_model=freeze_model)
             history = trainer.train(lr_schedule)
             for key in history[0].keys():
                 case_name = case if reps == 1 else case + f" run:{run_number}"
