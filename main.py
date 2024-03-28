@@ -22,7 +22,8 @@ if __name__ == "__main__":
     parser.add_argument("--path", default="./", help="The directory where the trained model should be saved.")
     parser.add_argument("--criterion", default="cross_entropy", help="The loss function to use for training.")
     parser.add_argument("--verbose", action="store_true", help="Whether to print detailed training progress.")
-    parser.add_argument("--model", default="resnet", help="The model to use for training. If None, a default model is used based on the given arguments.")
+    parser.add_argument("--model", default="resnet",
+                        help="The model to use for training. If None, a default model is used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
@@ -40,10 +41,10 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using {device}")
 
-    setups = {'9 ZO': [{'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 100}],
-              '3 FO': [{'grad_mode': 'first order', 'count': 3}],
-              '3 FO 9 ZO': [{'grad_mode': 'first order', 'count': 3},
-                            {'grad_mode': 'zeroth order forward-mode AD', 'count': 9, 'random vecs': 100}]}
+    setups = {'3 FO 24 ZO': [{'grad_mode': 'first order', 'count': 3},
+                            {'grad_mode': 'zeroth order forward-mode AD', 'count': 24, 'random vecs': 100}],
+              '24 ZO': [{'grad_mode': 'zeroth order forward-mode AD', 'count': 24, 'random vecs': 100}],
+              '3 FO': [{'grad_mode': 'first order', 'count': 3}]}
 
     dataset_name = args.dataset
     lr_schedule = [(steps, lr, log_period) for steps, lr, log_period in zip(steps_ls, lrs, log_periods)]
