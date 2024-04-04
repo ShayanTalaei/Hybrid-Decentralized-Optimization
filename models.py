@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from torch import nn
-from torch.nn import Linear
 from copy import deepcopy
 import torchvision.models as models
 from torchvision.models import ResNet101_Weights, ResNet50_Weights
@@ -9,10 +8,10 @@ from torchvision.models import ResNet101_Weights, ResNet50_Weights
 from datasets import get_model_shape
 
 
-def get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model=None, freeze_model=False):
+def get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False):
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
-    if model == 'resnet':
+    if model_name == 'resnet':
         model = ResNetModel(n_class, grad_mode='temp', criterion=None, freeze=freeze_model)
     else:
         model = CustomNN(input_shape, hidden_layers, grad_mode='temp', criterion=None, conv_number=conv_number)
@@ -32,7 +31,7 @@ def get_model(dataset_name, grad_mode, conv_number=2, hidden=128, num_layer=2, *
     input_shape, n_class = get_model_shape(dataset_name)
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
-    if kwargs['model'] == 'resnet':
+    if kwargs['model_name'] == 'resnet':
         model = ResNetModel(n_class, grad_mode=grad_mode, criterion=criterion, freeze=kwargs['freeze_model'], **kwargs)
     else:
         model = CustomNN(input_shape, hidden_layers, grad_mode=grad_mode, criterion=criterion, conv_number=conv_number)
@@ -47,47 +46,6 @@ def get_model(dataset_name, grad_mode, conv_number=2, hidden=128, num_layer=2, *
     # else:
     #     raise ValueError(f"Dataset {dataset_name} not implemented yet.")
     return model
-
-
-def get_group_models(dataset_name, group, initial_state_dict, conv_number=2, hidden=128, num_layer=2, **kwargs):
-    count, grad_mode = group['count'], group['grad_mode']
-    models = []
-    for i in range(count):
-        if 'zeroth order' in grad_mode:
-            if 'random vecs' in group:
-                kwargs['random vecs'] = group['random vecs']
-        model = get_model(dataset_name, grad_mode, conv_number=conv_number, hidden=hidden, num_layer=num_layer, **kwargs)
-
-        model.load_state_dict(initial_state_dict)
-        models.append(model)
-    return models
-
-
-def communicate(node_1, node_2):
-    model_1, model_2 = node_1['model'], node_2['model']
-    avg_state_dict = EnhancedModel.average_models(model_1, model_2)
-    model_1.load_state_dict(avg_state_dict)
-    model_2.load_state_dict(avg_state_dict)
-
-
-def take_step(node, lr):
-    steps = 1
-    taken_steps = 0
-    model, iterator = node['model'], node['iterator']
-    total_loss = 0
-    while taken_steps < steps:
-        try:
-            Xb, yb = next(iterator)
-            Xb, yb = Xb.to(model.device), yb.to(model.device)
-            grad, loss = model.compute_grad(Xb, yb, lr=lr)
-            model.move(grad, lr)
-            taken_steps += 1
-            total_loss += loss
-        except StopIteration:
-            iterator = iter(node['data loader'])
-            node['iterator'] = iterator
-    node['steps'] += steps
-    return total_loss / steps
 
 
 def one_three_multiplication(one,
@@ -120,7 +78,7 @@ class EnhancedModel(nn.Module):
         self.past_move = None
         self.acc_def = "class number"
         if 'zeroth order' in grad_mode:
-            self.random_vecs = kwargs.get('random vecs', 50)
+            self.random_vecs = kwargs.get('random_vecs', 100)
         device_name = kwargs.get("device name", 'cuda:0' if torch.cuda.is_available() else 'cpu')
         self.device = torch.device(device_name)
         self.to(self.device)
