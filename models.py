@@ -107,7 +107,7 @@ class EnhancedModel(nn.Module):
         actual_grad = [param.grad if param.grad is not None else torch.zeros_like(param) for param in self.parameters()]
         grad = torch.cat([gr.flatten() for gr in actual_grad], 0)
         if self.grad_mode == 'zeroth order forward-mode AD':
-            y_vectors = torch.randn(self.random_vecs, *grad.shape, device=self.device)  # , device=self.device
+            y_vectors = torch.randn(self.random_vecs, *grad.shape, device=self.device)
             efficiency = torch.matmul(y_vectors, grad)
             grad = torch.mean(efficiency.unsqueeze(1) * y_vectors, dim=0)
         return grad, loss

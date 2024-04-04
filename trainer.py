@@ -85,7 +85,7 @@ class HybridSGDTrainer:
 
             self.win.Lock(self.rank, lock_type=MPI.LOCK_EXCLUSIVE)
 
-            model_to_copy(self.model_copy)
+            self.model_to_copy(self.model_copy)
 
             self.win.Unlock(self.rank)
 
@@ -103,7 +103,7 @@ class HybridSGDTrainer:
             self.partner_model[:] = (self.partner_model + self.model_copy) / 2
             # self.partner_loss[:] = (self.partner_loss + self.training_loss) / 2
 
-            copy_to_model(self.partner_model)
+            self.copy_to_model(self.partner_model)
 
             self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
             self.steps += 1
