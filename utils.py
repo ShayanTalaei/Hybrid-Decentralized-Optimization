@@ -11,23 +11,6 @@ from trainer import HybridSGDTrainer
 from datasets import get_dataset
 from models import get_temp_state_dict
 
-
-def copy_to_model(model, model_copy_tensor):
-    counter = 0
-    for param in model.parameters():
-        t = param.data
-        t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()]
-        counter += t.nelement()
-
-# Copy original model weights to model_copy (Only weights)
-def model_to_copy(model, model_copy_tensor):
-    counter = 0
-    for param in model.parameters():
-        t = param.data
-        model_copy_tensor[counter: counter + t.nelement()] = t.view(-1)
-        counter += t.nelement()
-
-
 def cast(lst, dtype=torch.float32):
     return list(map(lambda x: torch.tensor(x).to(dtype), lst))
 

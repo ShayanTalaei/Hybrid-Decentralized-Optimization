@@ -5,8 +5,6 @@ from torch.utils.data import DataLoader
 from models import get_model
 from mpi4py import MPI
 
-from utils import copy_to_model, model_to_copy
-
 
 class HybridSGDTrainer:
 
@@ -87,7 +85,7 @@ class HybridSGDTrainer:
 
             self.win.Lock(self.rank, lock_type=MPI.LOCK_EXCLUSIVE)
 
-            model_to_copy(self.model, self.model_copy)
+            model_to_copy(self.model_copy)
 
             self.win.Unlock(self.rank)
 
@@ -105,7 +103,7 @@ class HybridSGDTrainer:
             self.partner_model[:] = (self.partner_model + self.model_copy) / 2
             # self.partner_loss[:] = (self.partner_loss + self.training_loss) / 2
 
-            copy_to_model(self.model, self.partner_model)
+            copy_to_model(self.partner_model)
 
             self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
             self.steps += 1
@@ -141,3 +139,19 @@ class HybridSGDTrainer:
                        'Validation loss': float(validation_loss), 'Validation accuracy': float(validation_accuracy)}
         self.history.append(result_dict)
         self.model.train()
+
+    def copy_to_model(self, model_copy_tensor):
+        counter = 0
+        for param in self.model.parameters():
+            t = param.data
+            t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()]
+            counter += t.nelement()
+
+    # Copy original model weights to model_copy (Only weights)
+    def model_to_copy(self, model_copy_tensor):
+        counter = 0
+        for param in self.model.parameters():
+            t = param.data
+            model_copy_tensor[counter: counter + t.nelement()] = t.view(-1)
+            counter += t.nelement()
+
