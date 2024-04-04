@@ -1,4 +1,5 @@
 import math
+import sys
 import time
 import os
 from mpi4py import MPI
@@ -51,46 +52,53 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
     is_first = True if rank < fn else False
     train_set, test_set, input_shape, n_class = get_dataset(dataset_name, path=path)
     lr = lr1 if is_first else lr0
+    try:
+        for run_number in range(1, reps + 1):
+            if is_first:
+                grad_mode = 'first order'
+                sampler = torch.utils.data.DistributedSampler(train_set, fn, rank)
+            else:
+                grad_mode = 'zeroth order forward-mode AD'
+                sampler = torch.utils.data.DistributedSampler(train_set, size - fn, rank - fn)
+            train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
+            test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, shuffle=True, num_workers=num_workers)
+            initial_state_dict = None
+            if rank == 0:
+                initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=conv_number, hidden=hidden, num_layer=num_layer, model_name=model_name, freeze_model=freeze_model)
+            if size > 1:
+                comm.barrier()
+                initial_state_dict = comm.bcast(initial_state_dict, root=0)
 
-    for run_number in range(1, reps + 1):
-        if is_first:
-            grad_mode = 'first order'
-            sampler = torch.utils.data.DistributedSampler(train_set, fn, rank)
-        else:
-            grad_mode = 'zeroth order forward-mode AD'
-            sampler = torch.utils.data.DistributedSampler(train_set, size - fn, rank - fn)
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
-        test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, shuffle=True, num_workers=num_workers)
-        initial_state_dict = None
-        if rank == 0:
-            initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=conv_number, hidden=hidden, num_layer=num_layer, model_name=model_name, freeze_model=freeze_model)
-        if size > 1:
-            comm.barrier()
-            initial_state_dict = comm.bcast(initial_state_dict, root=0)
+            trainer = HybridSGDTrainer(rank, size, comm, fn, grad_mode,
+                                       dataset_name, train_loader, test_loader,
+                                       initial_state_dict, lr,
+                                       conv_number=conv_number, hidden=hidden,
+                                       num_layer=num_layer, model_name=model_name,
+                                       freeze_model=freeze_model, random_vecs=random_vecs
+                                       )
+            if rank == 0:
+                print(f"\n--- Run number: {run_number}")
+            comm.Barrier()
+            start_time = time.time()
+            history = trainer.train(steps, log_period)
+            comm.Barrier()
+            end_time = time.time()
+            trainer.win.Free()
 
-        trainer = HybridSGDTrainer(rank, size, comm, fn, grad_mode,
-                                   dataset_name, train_loader, test_loader,
-                                   initial_state_dict, lr,
-                                   conv_number=conv_number, hidden=hidden,
-                                   num_layer=num_layer, model_name=model_name,
-                                   freeze_model=freeze_model, random_vecs=random_vecs
-                                   )
-        if rank == 0:
-            print(f"\n--- Run number: {run_number}")
-        comm.Barrier()
-        start_time = time.time()
-        history = trainer.train(steps, log_period)
-        comm.Barrier()
-        end_time = time.time()
-        trainer.win.Free()
+            for key in history[0].keys():
+                results[key] = [x[key] for x in history]
+            if rank == 0:
+                print("Running time: {:.4f}".format(float(end_time - start_time)))
+            del trainer
+            torch.cuda.empty_cache()
+            gc.collect()
+    except Exception as err:
+        import traceback
+        traceback.print_exc()
+        print(err)
+        sys.stdout.flush()
+        sys.exit()
 
-        for key in history[0].keys():
-            results[key] = [x[key] for x in history]
-        if rank == 0:
-            print("Running time: {:.4f}".format(float(end_time - start_time)))
-        del trainer
-        torch.cuda.empty_cache()
-        gc.collect()
     if file_name:
         torch.save(results, path + f"results/{dataset_name}/{file_name}_{rank}")
     if rank == 0 and plot:

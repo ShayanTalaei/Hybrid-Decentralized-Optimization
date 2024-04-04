@@ -1,7 +1,5 @@
 import numpy as np
 import torch
-from torch.utils.data.distributed import DistributedSampler
-from torch.utils.data import DataLoader
 from models import get_model
 from mpi4py import MPI
 
