@@ -66,7 +66,8 @@ def get_dataset(dataset_name, path=None, **kwargs):
         transform_cifar = v2.Compose([
             v2.RandomCrop(32, padding=4),
             v2.RandomHorizontalFlip(),
-            v2.ToTensor(),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
             v2.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
         dataset = CIFAR10(path + "data", train=True, download=True, transform=transform_cifar)
@@ -75,7 +76,8 @@ def get_dataset(dataset_name, path=None, **kwargs):
         transform_cifar = v2.Compose([
             v2.RandomCrop(32, padding=4),
             v2.RandomHorizontalFlip(),
-            v2.ToTensor(),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
             v2.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
         dataset = CIFAR100(path + "data", train=True, download=True, transform=transform_cifar)
