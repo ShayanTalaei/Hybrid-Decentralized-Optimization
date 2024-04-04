@@ -36,8 +36,8 @@ class HybridSGDTrainer:
 
         self.device = self.model.device
 
-        self.model_copy = torch.empty(model_size, dtype=torch.float64, device=self.device)
-        self.partner_model = torch.empty(model_size, dtype=torch.float64, device=self.device)
+        self.model_copy = torch.empty(model_size, dtype=torch.float64, device='cpu')
+        self.partner_model = torch.empty(model_size, dtype=torch.float64, device='cpu')
         self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                   self.partner_model.nelement() * self.partner_model.element_size())
         # self.partner_loss = torch.tensor(0.0, dtype=torch.float64, device=self.device)
@@ -142,7 +142,7 @@ class HybridSGDTrainer:
         counter = 0
         for param in self.model.parameters():
             t = param.data
-            t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()]
+            t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()].to(t.device)
             counter += t.nelement()
 
     # Copy original model weights to model_copy (Only weights)
@@ -150,6 +150,6 @@ class HybridSGDTrainer:
         counter = 0
         for param in self.model.parameters():
             t = param.data
-            model_copy_tensor[counter: counter + t.nelement()] = t.view(-1)
+            model_copy_tensor[counter: counter + t.nelement()] = t.view(-1).to(model_copy_tensor.device)
             counter += t.nelement()
 
