@@ -70,7 +70,7 @@ if __name__ == "__main__":
                path=args.path,
                file_name=None,
                batch_size=args.batch_size,
-               model=args.model,
+               model_name=args.model,
                freeze_model=args.freeze_model,
                plot=args.plot,
                random_vecs=args.rv,
