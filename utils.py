@@ -12,6 +12,7 @@ from trainer import HybridSGDTrainer
 from datasets import get_dataset
 from models import get_temp_state_dict
 
+
 def cast(lst, dtype=torch.float32):
     return list(map(lambda x: torch.tensor(x).to(dtype), lst))
 
@@ -44,7 +45,8 @@ def plot_trends(trends, x_axis, y_axis, start=0, path=None, end=float('inf'), da
 
 
 def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128, num_layer=2, reps=1, path=None,
-        file_name=None, batch_size=100, model_name=None, freeze_model=False, plot=False, random_vecs=200, num_workers=2):
+        file_name=None, batch_size=100, model_name=None, freeze_model=False, plot=False, random_vecs=200,
+        num_workers=2):
     results = {}
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -60,11 +62,14 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             else:
                 grad_mode = 'zeroth order forward-mode AD'
                 sampler = torch.utils.data.DistributedSampler(train_set, size - fn, rank - fn)
-            train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler, num_workers=num_workers)
-            test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, shuffle=True, num_workers=num_workers)
+            train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler,
+                                                       num_workers=num_workers)
+            test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, num_workers=num_workers)
             initial_state_dict = None
             if rank == 0:
-                initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=conv_number, hidden=hidden, num_layer=num_layer, model_name=model_name, freeze_model=freeze_model)
+                initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=conv_number,
+                                                         hidden=hidden, num_layer=num_layer, model_name=model_name,
+                                                         freeze_model=freeze_model)
             if size > 1:
                 comm.barrier()
                 initial_state_dict = comm.bcast(initial_state_dict, root=0)
