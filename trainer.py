@@ -34,13 +34,11 @@ class HybridSGDTrainer:
             buffer_size += buf.data.nelement()
         model_size = total_elements + buffer_size
 
-        self.device = self.model.device
-
         self.model_copy = torch.empty(model_size, dtype=torch.float64, device='cpu')
         self.partner_model = torch.empty(model_size, dtype=torch.float64, device='cpu')
         self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                   self.partner_model.nelement() * self.partner_model.element_size())
-        # self.partner_loss = torch.tensor(0.0, dtype=torch.float64, device=self.device)
+        # self.partner_loss = torch.tensor(0.0, dtype=torch.float64, device=self.model.device)
         # self.partner_loss_buf = MPI.memory.fromaddress(self.partner_loss.data_ptr(),
         #                                                self.partner_loss.nelement() * self.partner_loss.element_size())
 
