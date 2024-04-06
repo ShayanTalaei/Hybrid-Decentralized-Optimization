@@ -48,7 +48,7 @@ class ZAD(Optimizer):
 
     @torch.no_grad()
     def optimize(self, model, data, target, criterion):
-        copy_model = copy.deepcopy(model)
+        copy_model = model
         # self.set_f(model, data, target, criterion)
         # params = [p for group in self.param_groups for p in group['params']]
         # params_data = [p.data for p in params]
@@ -72,7 +72,7 @@ class ZAD(Optimizer):
                 delattr(copy_model, name)
                 setattr(copy_model, name, fwAD.make_dual(p, tangents[name]))
 
-            out = copy_model(input)
+            out = copy_model(data)
             jvp = fwAD.unpack_dual(out).tangent
             loss = criterion(out, target)
             print(jvp)
