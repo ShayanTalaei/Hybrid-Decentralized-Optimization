@@ -129,7 +129,7 @@ class HybridSGDTrainer:
         result = self.model.evaluate(self.test_loader, self.criterion)
         validation_loss = result['Loss']
         validation_accuracy = result['Accuracy']
-        training_loss = self.training_loss.data if self.training_loss else 0
+        training_loss = self.training_loss if self.training_loss else 0
         print(
             "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
             .format(self.steps,

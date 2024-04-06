@@ -2,7 +2,6 @@ import copy
 
 from torch.optim import Optimizer
 import torch
-from torch.func import jvp
 import torch.autograd.forward_ad as fwAD
 from torch.func import functional_call
 
@@ -74,7 +73,7 @@ class ZAD(Optimizer):
                 # Using the same ``tangents`` from the above section
                 dual_params[name] = fwAD.make_dual(p, tangents[name])
             out = functional_call(model, dual_params, data)
-            jvp2 = fwAD.unpack_dual(out).tangent
-            print(jvp2)
+            jvp = fwAD.unpack_dual(out).tangent
+            print(jvp)
             loss = criterion(out, target)
-            return loss
+            return loss.item()
