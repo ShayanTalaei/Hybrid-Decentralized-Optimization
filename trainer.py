@@ -91,7 +91,7 @@ class HybridSGDTrainer:
 
             self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
 
-            # self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
+            self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
             # self.win.Get((self.partner_loss_buf, MPI.FLOAT), target_rank=partner_rank)
 
             self.win.Unlock(partner_rank)
@@ -143,7 +143,6 @@ class HybridSGDTrainer:
             t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()].to(t.device)
             counter += t.nelement()
 
-    # Copy original model weights to model_copy (Only weights)
     def model_to_copy(self, model_copy_tensor):
         counter = 0
         for param in self.model.parameters():
