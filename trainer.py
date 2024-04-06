@@ -69,13 +69,11 @@ class HybridSGDTrainer:
             return self.train_solo(steps, log_period)
 
         for taken_steps in range(steps):
-            if self.rank == 0:
-                self.print_model_size_in_bytes()
-            if self.steps % log_period == 0:
-                self.comm.Barrier()
-                if self.rank == 0:
-                    self.evaluate()
-                self.comm.Barrier()
+            # if self.steps % log_period == 0:
+            #     self.comm.Barrier()
+            #     if self.rank == 0:
+            #         self.evaluate()
+            #     self.comm.Barrier()
 
             loss = self.take_step()
             if loss > 10 ** 4:  # Diverged!
@@ -152,9 +150,4 @@ class HybridSGDTrainer:
             t = param.data
             model_copy_tensor[counter: counter + t.nelement()] = t.view(-1).to(model_copy_tensor.device)
             counter += t.nelement()
-
-    def print_model_size_in_bytes(self):
-        param_size = sum(p.numel() * p.element_size() for p in self.model.parameters())
-        buffer_size = sum(b.numel() * b.element_size() for b in self.model.buffers())
-        print(f"Model size in bytes: {param_size + buffer_size}")
 
