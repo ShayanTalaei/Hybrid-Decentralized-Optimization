@@ -44,7 +44,7 @@ class EnhancedModel(nn.Module):
     def get_sd(self):
         return self.state_dict()
 
-    def evaluate(self, dataloader):
+    def evaluate(self, dataloader, criterion):
         model = self
         model_initial_training = model.training
         model.eval()
@@ -53,7 +53,6 @@ class EnhancedModel(nn.Module):
         count = 0
         corrects = 0
         data_count = 0
-        criterion = self.criterion
         result = {}
 
         with torch.no_grad():
