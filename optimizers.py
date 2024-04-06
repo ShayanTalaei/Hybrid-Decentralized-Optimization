@@ -1,6 +1,9 @@
+import copy
+
 from torch.optim import Optimizer
 import torch
 from torch.func import jvp
+import torch.autograd.forward_ad as fwAD
 
 
 class SGD(torch.optim.SGD):
@@ -45,18 +48,32 @@ class ZAD(Optimizer):
 
     @torch.no_grad()
     def optimize(self, model, data, target, criterion):
-        self.set_f(model, data, target, criterion)
-        params = [p for group in self.param_groups for p in group['params']]
-        params_data = [p.data for p in params]
-        total_loss = 0.0
-        torch._foreach_mul_(self.grad, self.momentum)
-        for _ in range(self.random_vec):
-            v = [torch.rand(p.size()).to(self.device) for p in params_data]
-            loss, jvp_result = jvp(self.f, tuple(params), tuple(v))
-            print(jvp_result, loss)
-            total_loss += loss.item()
-            torch._foreach_mul_(v, (1 - self.momentum) / self.random_vec)
-            torch._foreach_addcmul_(self.grad, jvp_result, v)
+        copy_model = copy.deepcopy(model)
+        # self.set_f(model, data, target, criterion)
+        # params = [p for group in self.param_groups for p in group['params']]
+        # params_data = [p.data for p in params]
+        # total_loss = 0.0
+        # torch._foreach_mul_(self.grad, self.momentum)
+        # for _ in range(self.random_vec):
+        #     v = [torch.rand(p.size()).to(self.device) for p in params_data]
+        #     loss, jvp_result = jvp(self.f, tuple(params), tuple(v))
+        #     print(jvp_result, loss)
+        #     total_loss += loss.item()
+        #     torch._foreach_mul_(v, (1 - self.momentum) / self.random_vec)
+        #     torch._foreach_addcmul_(self.grad, jvp_result, v)
+        #
+        # torch._foreach_addcmul_(params_data, self.grad, -self.lr)
+        # return total_loss / self.random_vec
+        params = {name: p for name, p in copy_model.named_parameters()}
+        tangents = {name: torch.rand_like(p) for name, p in params.items()}
 
-        torch._foreach_addcmul_(params_data, self.grad, -self.lr)
-        return total_loss / self.random_vec
+        with fwAD.dual_level():
+            for name, p in params.items():
+                delattr(copy_model, name)
+                setattr(copy_model, name, fwAD.make_dual(p, tangents[name]))
+
+            out = copy_model(input)
+            jvp = fwAD.unpack_dual(out).tangent
+            loss = criterion(out, target)
+            print(jvp)
+            return loss.item()
