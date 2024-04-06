@@ -4,6 +4,8 @@ from torch.optim import Optimizer
 import torch
 from torch.func import jvp
 import torch.autograd.forward_ad as fwAD
+from torch.func import functional_call
+
 
 
 class SGD(torch.optim.SGD):
@@ -48,7 +50,6 @@ class ZAD(Optimizer):
 
     @torch.no_grad()
     def optimize(self, model, data, target, criterion):
-        copy_model = model
         # self.set_f(model, data, target, criterion)
         # params = [p for group in self.param_groups for p in group['params']]
         # params_data = [p.data for p in params]
@@ -64,16 +65,16 @@ class ZAD(Optimizer):
         #
         # torch._foreach_addcmul_(params_data, self.grad, -self.lr)
         # return total_loss / self.random_vec
-        params = {name: p for name, p in copy_model.named_parameters()}
+        params = {name: p for name, p in model.named_parameters()}
         tangents = {name: torch.rand_like(p) for name, p in params.items()}
 
+        dual_params = {}
         with fwAD.dual_level():
             for name, p in params.items():
-                delattr(copy_model, name)
-                setattr(copy_model, name, fwAD.make_dual(p, tangents[name]))
-
-            out = copy_model(data)
-            jvp = fwAD.unpack_dual(out).tangent
+                # Using the same ``tangents`` from the above section
+                dual_params[name] = fwAD.make_dual(p, tangents[name])
+            out = functional_call(model, dual_params, data)
+            jvp2 = fwAD.unpack_dual(out).tangent
+            print(jvp2)
             loss = criterion(out, target)
-            print(jvp)
             return loss.item()
