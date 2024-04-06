@@ -1,26 +1,40 @@
 import numpy as np
 import torch
+
+import optimizers
 from models import get_model
 from mpi4py import MPI
+
+from datasets import get_criterion
 
 
 class HybridSGDTrainer:
 
     def __init__(self, rank, size, comm, fn, grad_mode, dataset_name, train_loader, test_loader, initial_state_dict,
-                 lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200):
+                 lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
+                 momentum=0.9):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
         self.comm = comm
         self.fn = fn
         self.lr = lr
-        self.model = get_model(dataset_name, grad_mode, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
+        self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs)
 
         self.model.load_state_dict(initial_state_dict)
         self.test_loader = test_loader
         self.train_loader = train_loader
         self.train_iterator = iter(train_loader)
+        assert grad_mode in ['first order', 'zeroth order forward-mode AD']
+        self.grad_mode = grad_mode
+        self.criterion = get_criterion(dataset_name)
+        grad_mode_to_opt = {'first order': 'SGD', 'zeroth order forward-mode AD': 'ZAD'}
+        opt_args = {'lr': lr, 'momentum': momentum}
+        if self.grad_mode.startswith('zero order'):
+            opt_args['random_vec'] = random_vecs
+
+        self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(self.model.parameters(), **opt_args)
 
         self.training_loss = None
         self.history = []
@@ -38,10 +52,6 @@ class HybridSGDTrainer:
         self.partner_model = torch.empty(model_size, dtype=torch.float64, device='cpu')
         self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                   self.partner_model.nelement() * self.partner_model.element_size())
-        # self.partner_loss = torch.tensor(0.0, dtype=torch.float64, device=self.model.device)
-        # self.partner_loss_buf = MPI.memory.fromaddress(self.partner_loss.data_ptr(),
-        #                                                self.partner_loss.nelement() * self.partner_loss.element_size())
-
         buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
                                      self.model_copy.nelement() * self.model_copy.element_size())
         self.win = MPI.Win.Create(buf, comm=self.comm)
@@ -54,13 +64,11 @@ class HybridSGDTrainer:
             try:
                 Xb, yb = next(self.train_iterator)
                 Xb, yb = Xb.to(self.model.device), yb.to(self.model.device)
-                grad, loss = self.model.compute_grad(Xb, yb, lr=self.lr)
-                self.model.move(grad, self.lr)
+                loss = self.optimizer.optimize(self.model, Xb, yb, self.criterion)
                 taken_steps += 1
                 total_loss += loss
             except StopIteration:
                 iterator = iter(self.train_loader)
-        self.steps += steps
         return total_loss / steps
 
     def train(self, steps, log_period):
@@ -92,12 +100,10 @@ class HybridSGDTrainer:
             self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
 
             self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
-            # self.win.Get((self.partner_loss_buf, MPI.FLOAT), target_rank=partner_rank)
 
             self.win.Unlock(partner_rank)
 
             self.partner_model[:] = (self.partner_model + self.model_copy) / 2
-            # self.partner_loss[:] = (self.partner_loss + self.training_loss) / 2
 
             self.copy_to_model(self.partner_model)
 

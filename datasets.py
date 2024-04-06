@@ -28,6 +28,13 @@ INPUT_DIM = {'mnist': [1, 28, 28],
              }
 
 
+def get_criterion(dataset_name, reduction='mean'):
+    if dataset_name == "year_pred":
+        return torch.nn.MSELoss(reduction=reduction)
+    else:
+        return torch.nn.CrossEntropyLoss(reduction=reduction)
+
+
 class CustomDataset(Dataset):
     def __init__(self, x, labels):
         self.x = x

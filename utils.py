@@ -67,7 +67,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, num_workers=num_workers)
             initial_state_dict = None
             if rank == 0:
-                initial_state_dict = get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=conv_number,
+                initial_state_dict = get_temp_state_dict(input_shape, n_class, conv_number=conv_number,
                                                          hidden=hidden, num_layer=num_layer, model_name=model_name,
                                                          freeze_model=freeze_model)
             if size > 1:

@@ -1,124 +1,48 @@
 import numpy as np
 import torch
 from torch import nn
-from copy import deepcopy
 import torchvision.models as models
 from torchvision.models import ResNet101_Weights, ResNet50_Weights
 
 from datasets import get_model_shape
 
 
-def get_temp_state_dict(dataset_name, input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False):
+def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model_name=None,
+                        freeze_model=False):
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
     if model_name == 'resnet':
-        model = ResNetModel(n_class, grad_mode='temp', criterion=None, freeze=freeze_model)
+        model = ResNetModel(n_class, freeze=freeze_model)
     else:
-        model = CustomNN(input_shape, hidden_layers, grad_mode='temp', criterion=None, conv_number=conv_number)
-    # if dataset_name in ['birds', 'flowers', 'pets', 'food101', 'year_pred', 'mnist', 'cifar10', 'cifar100']:
-    #     model = LinearEnhancedModel(input_shape, n_class, grad_mode='temp', criterion=None)
-    # elif dataset_name == "fmnist":
-    #     model = FashionMnistNet(grad_mode='temp', criterion=None)
-    # else:
-    #     raise ValueError(f"Dataset {dataset_name} not implemented yet.")
+        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number)
     state_dict = model.state_dict()
     return state_dict
 
 
-def get_model(dataset_name, grad_mode, conv_number=2, hidden=128, num_layer=2, **kwargs):
+def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, **kwargs):
     kwargs['dataset_name'] = dataset_name
-    criterion = get_criterion(dataset_name)
     input_shape, n_class = get_model_shape(dataset_name)
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
     if kwargs['model_name'] == 'resnet':
-        model = ResNetModel(n_class, grad_mode=grad_mode, criterion=criterion, freeze=kwargs['freeze_model'], **kwargs)
+        model = ResNetModel(n_class, freeze=kwargs['freeze_model'], **kwargs)
     else:
-        model = CustomNN(input_shape, hidden_layers, grad_mode=grad_mode, criterion=criterion, conv_number=conv_number)
+        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number)
 
-    # if dataset_name in ['birds', 'flowers', 'pets', 'food101', 'mnist', 'cifar10', 'cifar100']:
-    #     model = LinearEnhancedModel(input_shape, n_class, grad_mode=grad_mode, criterion=criterion, **kwargs)
-    # elif dataset_name == "year_pred":
-    #     model = LinearEnhancedModel(input_shape, n_class, grad_mode=grad_mode, criterion=criterion, **kwargs)
-    #     model.acc_def = "in neighbourhood"
-    # elif dataset_name == "fmnist":
-    #     model = FashionMnistNet(grad_mode=grad_mode, criterion=criterion, **kwargs)
-    # else:
-    #     raise ValueError(f"Dataset {dataset_name} not implemented yet.")
     return model
-
-
-def one_three_multiplication(one,
-                             three):
-    # One.shape= (b), three.shape= (b, m, n). Returns the product of each number in one to each layer of three
-    shape = three.shape
-    temp = torch.diag(one) @ three.reshape(shape[0], -1)
-    return temp.reshape(shape)
-
-
-def get_criterion(dataset_name, reduction='mean'):
-    if dataset_name == "year_pred":
-        return torch.nn.MSELoss(reduction=reduction)
-    else:
-        return torch.nn.CrossEntropyLoss(reduction=reduction)
 
 
 class EnhancedModel(nn.Module):
 
-    def __init__(self, grad_mode, criterion, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
-        assert grad_mode in ['first order',
-                             'zeroth order delta',
-                             'zeroth order forward-mode AD',
-                             'zeroth order bidirectional delta',
-                             'zeroth order unbiased delta',
-                             'temp']
-        self.grad_mode = grad_mode
-        self.criterion = criterion
-        self.past_move = None
         self.acc_def = "class number"
-        if 'zeroth order' in grad_mode:
-            self.random_vecs = kwargs.get('random_vecs', 100)
         device_name = kwargs.get("device name", 'cuda:0' if torch.cuda.is_available() else 'cpu')
         self.device = torch.device(device_name)
         self.to(self.device)
 
-    @staticmethod
-    def average_models(model_1, model_2):
-        sd_1 = model_1.state_dict()
-        sd_2 = model_2.state_dict()
-
-        averaged_sd = deepcopy(sd_1)
-        for key in sd_1:
-            averaged_sd[key] = (sd_1[key] + sd_2[key]) / 2
-        return averaged_sd
-
     def get_sd(self):
         return self.state_dict()
-
-    def compute_grad(self, xb, yb, lr=None):
-        assert self.grad_mode in ['first order', 'zeroth order forward-mode AD']
-
-        self.zero_grad()
-        outputs = self(xb)
-        loss = self.criterion(outputs, yb)
-        #         pdb.set_trace()
-        loss.backward()
-        actual_grad = [param.grad if param.grad is not None else torch.zeros_like(param) for param in self.parameters()]
-        grad = torch.cat([gr.flatten() for gr in actual_grad], 0)
-        if self.grad_mode == 'zeroth order forward-mode AD':
-            y_vectors = torch.randn(self.random_vecs, *grad.shape, device=self.device)
-            efficiency = torch.matmul(y_vectors, grad)
-            grad = torch.mean(efficiency.unsqueeze(1) * y_vectors, dim=0)
-        return grad, loss
-
-    def move(self, vector, lr):
-        if self.past_move is None:
-            self.past_move = vector
-        next_move = 0.9 * self.past_move + 0.1 * vector
-        params = torch.nn.utils.parameters_to_vector(self.parameters())
-        torch.nn.utils.vector_to_parameters(params - (lr * next_move), self.parameters())
-        self.past_move = next_move
 
     def evaluate(self, dataloader):
         model = self
@@ -153,157 +77,12 @@ class EnhancedModel(nn.Module):
         return result
 
 
-# class LinearEnhancedModel(EnhancedModel):
-#
-#     def __init__(self, input_shape, output_shape, grad_mode, criterion, **kwargs):
-#         EnhancedModel.__init__(self, grad_mode, criterion, **kwargs)
-#         inp = 1
-#         for i in input_shape:
-#             inp *= i
-#         self.flatten = nn.Flatten()
-#         self.linear = Linear(inp, output_shape, bias=True)
-#         if grad_mode != 'temp':
-#             self.dim = sum([p.numel() for p in self.parameters()])
-#             self.dataset_name = kwargs.get('dataset_name', None)
-#             self.criterion_non_reduce = get_criterion(dataset_name=self.dataset_name,
-#                                                       reduction='none')
-#         self.to(self.device)
-#
-#     def forward(self, xb):
-#         xb = self.flatten(xb)
-#         return self.linear(xb)
-#
-#     def perturb(self, search_radiuses):
-#         perturbations, new_params = [], []
-#         vecs_count = self.random_vecs
-#         for i, param in enumerate(self.parameters()):
-#             stacked_parameter = (torch.t(param)).repeat((vecs_count,) +
-#                                                         (1,) * (len(param.size())))
-#
-#             random_perturbation = torch.randn_like((torch.t(param)).repeat(
-#                 (self.random_vecs,) + (1,) * (len(param.size()))))
-#
-#             perturbation_amount = random_perturbation
-#             perturbations.append(perturbation_amount)
-#             perturbation_amount = (perturbation_amount.reshape(vecs_count, -1) * search_radiuses[:, None]).reshape(
-#                 perturbation_amount.shape)
-#
-#             new_params.append(torch.cat((stacked_parameter + perturbation_amount,
-#                                          stacked_parameter - perturbation_amount), dim=0))
-#         return perturbations, new_params
-#
-#     def compute_grad_zeroth_order_delta(self, xb, yb, v):
-#         # Perform local search
-#         search_radiuses = torch.ones(self.random_vecs, device=self.device) * v  #
-#         perturbations, new_params = self.perturb(search_radiuses=search_radiuses)
-#         grad, loss = self.compute_average_grad(xb, yb, perturbations, new_params, search_radiuses)
-#         return grad, loss
-#
-#     def compute_grad(self, xb, yb, **kwargs):
-#         if self.grad_mode in 'zeroth order delta':
-#             lr = kwargs.get('lr', None)
-#             v = lr / (self.dim + 6)
-#             grad, loss = self.compute_grad_zeroth_order_delta(xb, yb, v)
-#         elif self.grad_mode in ['first order', 'zeroth order forward-mode AD']:
-#             grad, loss = super().compute_grad(xb, yb)
-#         else:
-#             raise ValueError("Unknown grad mode")
-#
-#         return grad, loss
-#
-#     def batch_forward(self, xb, new_params, vecs_count):
-#         batch_size = len(xb)
-#         #         if self.dataset_name == "mnsit":
-#         #             x = xb.view(xb.size(0), -1)
-#         #             x = x.repeat(vecs_count*2, 1, 1)
-#         #             x = torch.bmm(x, new_params[0])
-#         #             x += new_params[1].unsqueeze(1).repeat(1, batch_size, 1)
-#         #             x = F.relu(x)
-#         #             x = torch.bmm(x, new_params[2])
-#         #             x += new_params[3].unsqueeze(1).repeat(1, batch_size, 1)
-#         #         elif self.dataset_name == "year_pred": ## Todo change this!
-#         #             x = xb.view(xb.size(0), -1)
-#         x = xb.repeat(vecs_count * 2, 1, 1)
-#         x = torch.bmm(x, new_params[0])
-#         x += new_params[1].unsqueeze(1).repeat(1, batch_size, 1)
-#         return x
-#
-#     def compute_average_grad(self, xb, yb, perturbations, new_params, search_radiuses):
-#         vecs_count = perturbations[0].shape[0]
-#         with torch.no_grad():
-#             x = self.batch_forward(xb, new_params, vecs_count)
-#
-#             losses = self.vector_batch_loss(x, yb)
-#             ratios = torch.div((losses[0:vecs_count] - losses[vecs_count:2 * vecs_count]), 2 * search_radiuses)
-#             avg_loss = torch.mean(losses)
-#             grads = []
-#             for u, param in zip(perturbations, self.parameters()):
-#                 u = one_three_multiplication(ratios, u)
-#                 mean_u = torch.mean(u, 0)
-#                 grad = torch.t(mean_u)
-#                 grads.append(grad.flatten())
-#             return torch.cat(grads), avg_loss
-#
-#     def vector_batch_loss(self, x, y):
-#         x_shape = x.shape
-#         independent_vecs = x_shape[0]
-#         batch_size = x_shape[1]
-#         if self.dataset_name == "year_pred":
-#             reshape = (-1,)
-#             y = y.flatten()
-#         else:
-#             reshape = (-1, x_shape[2])
-#         x_2d = torch.reshape(x, reshape)
-#         y_repeated = y.repeat(independent_vecs)
-#         losses = self.criterion_non_reduce(x_2d, y_repeated)
-#         losses = losses.reshape(independent_vecs, batch_size)
-#         losses = torch.mean(losses, 1)
-#         return losses
-#
-#
-# class FashionMnistNet(EnhancedModel):
-#
-#     def __init__(self, grad_mode, criterion, **kwargs):
-#         super(FashionMnistNet, self).__init__(grad_mode, criterion, **kwargs)
-#
-#         self.layer1 = nn.Sequential(
-#             nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
-#             nn.BatchNorm2d(32),
-#             nn.ReLU(),
-#             nn.MaxPool2d(kernel_size=2, stride=2)
-#         )
-#
-#         self.layer2 = nn.Sequential(
-#             nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
-#             nn.BatchNorm2d(64),
-#             nn.ReLU(),
-#             nn.MaxPool2d(2)
-#         )
-#
-#         self.fc1 = nn.Linear(in_features=64 * 6 * 6, out_features=600)
-#         self.drop = nn.Dropout2d(0.25)
-#         self.fc2 = nn.Linear(in_features=600, out_features=120)
-#         self.fc3 = nn.Linear(in_features=120, out_features=10)
-#         self.to(self.device)
-#
-#     def forward(self, x):
-#         out = self.layer1(x)
-#         out = self.layer2(out)
-#         out = out.view(out.size(0), -1)
-#         out = self.fc1(out)
-#         out = self.drop(out)
-#         out = self.fc2(out)
-#         out = self.fc3(out)
-#
-#         return out
-
-
 class CustomNN(EnhancedModel):
     """
     Simple feedforward neural network.
     """
 
-    def __init__(self, input_shape, hidden, grad_mode, criterion, activation='relu', sigmoid_output=True, conv_number=1,
+    def __init__(self, input_shape, hidden, activation='relu', sigmoid_output=True, conv_number=1,
                  **kwargs):
         """
         Initialize the neural network.
@@ -313,7 +92,7 @@ class CustomNN(EnhancedModel):
         :param sigmoid_output: Whether to use a sigmoid activation on the output.
         :param conv_number: The number of convolutional layers to use.
         """
-        super().__init__(grad_mode, criterion, **kwargs)
+        super().__init__(**kwargs)
         self.seq = nn.Sequential()
         if conv_number > 0:
             self.seq.append(nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3, stride=1,
@@ -365,7 +144,7 @@ class ResNetModel(EnhancedModel):
     Simple feedforward neural network.
     """
 
-    def __init__(self, num_classes, grad_mode, criterion, freeze=False, **kwargs):
+    def __init__(self, num_classes, freeze=False, **kwargs):
         """
         Initialize the resnet model.
         :param num_classes: The number of classes.
@@ -374,7 +153,7 @@ class ResNetModel(EnhancedModel):
         :param freeze: Whether to freeze the model except the last layer.
         :param kwargs: Additional arguments.
         """
-        super().__init__(grad_mode, criterion, **kwargs)
+        super().__init__(**kwargs)
         self.weight = ResNet50_Weights.DEFAULT
         self.model = models.resnet50(weights=self.weight)
         self.preprocess = self.weight.transforms()
