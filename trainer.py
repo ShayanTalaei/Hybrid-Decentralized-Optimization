@@ -75,9 +75,9 @@ class HybridSGDTrainer:
                     self.evaluate()
                 self.comm.Barrier()
 
-            # loss = self.take_step()
-            # if loss > 10 ** 4:  # Diverged!
-            #     return self.history
+            loss = self.take_step()
+            if loss > 10 ** 4:  # Diverged!
+                return self.history
 
             self.win.Lock(self.rank, lock_type=MPI.LOCK_EXCLUSIVE)
 
@@ -101,7 +101,7 @@ class HybridSGDTrainer:
 
             self.copy_to_model(self.partner_model)
 
-            # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+            self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
             self.steps += 1
         return self.history
 

@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("--hidden", default=128, type=int, help="The number of hidden units in the model.")
     parser.add_argument("--num_layer", default=2, type=int, help="The number of layers in the model.")
     parser.add_argument("--conv_number", default=2, type=int, help="The number of convolutional layers in the model.")
-    parser.add_argument("--batch_size", default=100, type=int, help="The batch size for training.")
+    parser.add_argument("--batch_size", default=25, type=int, help="The batch size for training.")
     parser.add_argument("--plot", action="store_true", help="Whether to plot the training and validation curves.")
     parser.add_argument("--lr0", default=0.0001, type=float, help="The learning rate for zero-order optimizers.")
     parser.add_argument("--lr1", default=0.0001, type=float, help="The learning rate for first-order optimizers.")
