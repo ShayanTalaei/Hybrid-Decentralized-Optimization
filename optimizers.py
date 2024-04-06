@@ -77,4 +77,4 @@ class ZAD(Optimizer):
             jvp2 = fwAD.unpack_dual(out).tangent
             print(jvp2)
             loss = criterion(out, target)
-            return loss.item()
+            return loss
