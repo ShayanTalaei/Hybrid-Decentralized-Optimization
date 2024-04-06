@@ -69,12 +69,12 @@ class HybridSGDTrainer:
             return self.train_solo(steps, log_period)
 
         for taken_steps in range(steps):
-            # if self.steps % log_period == 0:
-            #     self.comm.Barrier()
-            #     if self.rank == 0:
-            #         self.evaluate()
-            #     self.comm.Barrier()
-            #
+            if self.steps % log_period == 0:
+                self.comm.Barrier()
+                if self.rank == 0:
+                    self.evaluate()
+                self.comm.Barrier()
+
             # loss = self.take_step()
             # if loss > 10 ** 4:  # Diverged!
             #     return self.history
