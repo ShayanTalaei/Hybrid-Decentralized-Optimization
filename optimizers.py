@@ -1,6 +1,6 @@
 from torch.optim import Optimizer
 import torch
-from torch.autograd.functional import jvp
+from torch.func import jvp
 
 
 class SGD(torch.optim.SGD):
