@@ -33,6 +33,7 @@ if __name__ == "__main__":
                                                           "used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
     parser.add_argument("--scheduler", action="store_true", help="Whether to use a learning rate scheduler.")
+    parser.add_argument("--momentum", default=0.0, type=float, help="The momentum parameter for the optimizer.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     mpi4py.rc.threads = False
@@ -74,4 +75,5 @@ if __name__ == "__main__":
                freeze_model=args.freeze_model,
                plot=args.plot,
                random_vecs=args.rv,
+               momentum=args.momentum,
                )

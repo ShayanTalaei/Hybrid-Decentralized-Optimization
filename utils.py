@@ -46,7 +46,7 @@ def plot_trends(trends, x_axis, y_axis, start=0, path=None, end=float('inf'), da
 
 def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128, num_layer=2, reps=1, path=None,
         file_name=None, batch_size=100, model_name=None, freeze_model=False, plot=False, random_vecs=200,
-        num_workers=2):
+        num_workers=2, momentum=0.0):
     results = {}
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -79,7 +79,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                        initial_state_dict, lr,
                                        conv_number=conv_number, hidden=hidden,
                                        num_layer=num_layer, model_name=model_name,
-                                       freeze_model=freeze_model, random_vecs=random_vecs
+                                       freeze_model=freeze_model, random_vecs=random_vecs,
+                                       momentum=momentum
                                        )
             if rank == 0:
                 print(f"\n--- Run number: {run_number}")

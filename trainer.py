@@ -12,7 +12,7 @@ class HybridSGDTrainer:
 
     def __init__(self, rank, size, comm, fn, grad_mode, dataset_name, train_loader, test_loader, initial_state_dict,
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
-                 momentum=0.9):
+                 momentum=0.0):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
