@@ -99,7 +99,6 @@ class ZAD(Optimizer):
             torch._foreach_mul_(self.grad, self.momentum)
             for _ in range(self.random_vec):
                 v = [torch.randn(p.size()).to(self.device) for p in self.params_data]
-                print(v)
                 params_v = copy.deepcopy(self.params_dict)
                 for p, v_ in zip(params_v.items(), v):
                     p[1].data += v_
