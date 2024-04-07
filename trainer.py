@@ -85,44 +85,44 @@ class HybridSGDTrainer:
                     self.evaluate()
                 self.comm.Barrier()
 
-            print(f"Rank {self.rank} steps: {self.steps} before take step")
+            # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
             loss = self.take_step()
-            print(f"Rank {self.rank} steps: {self.steps} after take step")
-            if loss > 10 ** 4:  # Diverged!
-                return self.history
+            # print(f"Rank {self.rank} steps: {self.steps} after take step")
+            # if loss > 10 ** 4:  # Diverged!
+            #     return self.history
 
-            print(f"Rank {self.rank} steps: {self.steps} before lock")
+            # print(f"Rank {self.rank} steps: {self.steps} before lock")
 
             self.win.Lock(self.rank, lock_type=MPI.LOCK_EXCLUSIVE)
-            print(f"Rank {self.rank} steps: {self.steps} after lock")
+            # print(f"Rank {self.rank} steps: {self.steps} after lock")
 
             self.model_to_copy(self.model_copy)
-            print(f"Rank {self.rank} steps: {self.steps} after model to copy")
+            # print(f"Rank {self.rank} steps: {self.steps} after model to copy")
 
             self.win.Unlock(self.rank)
-            print(f"Rank {self.rank} steps: {self.steps} after unlock")
+            # print(f"Rank {self.rank} steps: {self.steps} after unlock")
 
             partner_rank = np.random.randint(self.size)
             while partner_rank == self.rank:
                 partner_rank = np.random.randint(self.size)
 
-            print(f"Rank {self.rank} steps: {self.steps} before lock partner")
+            # print(f"Rank {self.rank} steps: {self.steps} before lock partner")
 
             self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
-            print(f"Rank {self.rank} steps: {self.steps} after lock partner")
+            # print(f"Rank {self.rank} steps: {self.steps} after lock partner")
 
             self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
 
-            print(f"Rank {self.rank} steps: {self.steps} after get")
+            # print(f"Rank {self.rank} steps: {self.steps} after get")
 
             self.win.Unlock(partner_rank)
-            print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
+            # print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
 
             self.partner_model[:] = (self.partner_model + self.model_copy) / 2
 
             self.copy_to_model(self.partner_model)
-            print(f"Rank {self.rank} steps: {self.steps} after copy to model")
+            # print(f"Rank {self.rank} steps: {self.steps} after copy to model")
 
             self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
             self.steps += 1
