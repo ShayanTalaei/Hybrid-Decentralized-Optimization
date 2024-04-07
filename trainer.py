@@ -69,6 +69,7 @@ class HybridSGDTrainer:
                 taken_steps += 1
                 total_loss += loss
             except StopIteration:
+                taken_steps += 1
                 iterator = iter(self.train_loader)
         return total_loss / steps
 
@@ -89,8 +90,8 @@ class HybridSGDTrainer:
 
             loss = self.take_step()
             # print(f"Rank {self.rank} steps: {self.steps} after take step")
-            # if loss > 10 ** 4:  # Diverged!
-            #     return self.history
+            if loss > 10 ** 4:  # Diverged!
+                return self.history
 
             # print(f"Rank {self.rank} steps: {self.steps} before lock")
 
