@@ -39,7 +39,7 @@ class ZAD(Optimizer):
         self.momentum = momentum
         self.grad = [torch.zeros(p.size()).to(self.device) for group in self.param_groups for p in group['params']]
         self.params = [p for group in self.param_groups for p in group['params']]
-        self.params_data = [p.data for p in params]
+        self.params_data = [p.data for p in self.params]
         self.names = names
         assert grad_mode in ['zeroth_order_simple', 'zeroth_order_forward-mode_AD']
         self.grad_mode = grad_mode
@@ -99,6 +99,7 @@ class ZAD(Optimizer):
             torch._foreach_mul_(self.grad, self.momentum)
             for _ in range(self.random_vec):
                 v = [torch.randn(p.size()).to(self.device) for p in self.params_data]
+                print(v)
                 params_v = copy.deepcopy(self.params_dict)
                 for p, v_ in zip(params_v.items(), v):
                     p[1].data += v_
