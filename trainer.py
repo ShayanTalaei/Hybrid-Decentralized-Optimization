@@ -81,9 +81,11 @@ class HybridSGDTrainer:
             except StopIteration:
                 taken_steps += 1
                 iterator = iter(self.train_loader)
-        if self.steps < self.warmup_steps:
+        if self.steps < self.scheduler_warmup_steps:
+            print(f"Rank {self.rank} warmup")
             self.warmup_scheduler.dampen()
         elif self.scheduler is not None:
+            print(f"Rank {self.rank} scheduler")
             self.scheduler.step()
         return total_loss / steps
 
