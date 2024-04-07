@@ -53,7 +53,7 @@ class ZAD(Optimizer):
         # self.set_f(model, data, target, criterion)
         # params = [p for group in self.param_groups for p in group['params']]
         # params_data = [p.data for p in params]
-        # total_loss = 0.0
+        total_loss = 0.0
         # torch._foreach_mul_(self.grad, self.momentum)
         # for _ in range(self.random_vec):
         #     v = [torch.rand(p.size()).to(self.device) for p in params_data]
@@ -66,20 +66,22 @@ class ZAD(Optimizer):
         # torch._foreach_add_(params_data, torch._foreach_mul(self.grad, -self.lr))
         # return total_loss / self.random_vec
         params = {name: p for name, p in model.named_parameters()}
-        tangents = {name: torch.clip(torch.rand_like(p), min=1e-3) for name, p in params.items()}
+        torch._foreach_mul_(self.grad, self.momentum)
+        total_loss = 0.0
+        for _ in range(self.random_vec):
+            tangents = {name: torch.clip(torch.rand_like(p), min=1e-3) for name, p in params.items()}
+            v = [t for t in tangents.values()]
 
-        dual_params = {}
-        with fwAD.dual_level():
-            for name, p in params.items():
-                dual_params[name] = fwAD.make_dual(p, tangents[name])
-            out = functional_call(model, dual_params, data)
-            loss = criterion(out, target)
-            jvp_result = fwAD.unpack_dual(loss).tangent
+            dual_params = {}
+            with fwAD.dual_level():
+                for name, p in params.items():
+                    dual_params[name] = fwAD.make_dual(p, tangents[name])
+                loss = criterion(functional_call(model, dual_params, data), target)
+                jvp_result = fwAD.unpack_dual(loss).tangent
+            torch._foreach_mul_(v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
+            torch._foreach_add_(self.grad, v)
+            total_loss += loss.item()
 
         params_data = [p.data for p in params.values()]
-        v = [t for t in tangents.values()]
-        torch._foreach_mul_(self.grad, self.momentum)
-        torch._foreach_mul_(v, jvp_result.item() * (1 - self.momentum))
-        torch._foreach_add_(self.grad, v)
         torch._foreach_add_(params_data, torch._foreach_mul(self.grad, -self.lr))
-        return loss.item()
+        return total_loss
