@@ -64,7 +64,6 @@ class ZAD(Optimizer):
             # torch._foreach_addcmul_(self.grad, v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
 
         torch._foreach_add_(params_data, torch._foreach_mul(self.grad, -self.lr))
-        print(self.grad)
         return total_loss / self.random_vec
         # params = {name: p for name, p in model.named_parameters()}
         # tangents = {name: torch.clip(torch.rand_like(p), min=1e-5) for name, p in params.items()}
