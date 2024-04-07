@@ -101,7 +101,7 @@ class HybridSGDTrainer:
 
             self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
 
-            # self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
+            self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
 
             self.win.Unlock(partner_rank)
 
