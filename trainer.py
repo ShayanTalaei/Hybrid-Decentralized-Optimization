@@ -26,16 +26,15 @@ class HybridSGDTrainer:
         self.test_loader = test_loader
         self.train_loader = train_loader
         self.train_iterator = iter(train_loader)
-        assert grad_mode in ['first order', 'zeroth order forward-mode AD']
+        assert grad_mode in ['first_order', 'zeroth_order_forward-mode_AD', 'zeroth_order_simple']
         self.grad_mode = grad_mode
         self.criterion = get_criterion(dataset_name)
-        grad_mode_to_opt = {'first order': 'SGD', 'zeroth order forward-mode AD': 'ZAD'}
+        grad_mode_to_opt = {'first order': 'SGD', 'zeroth order forward-mode AD': 'ZAD', 'zeroth order simple': 'ZAD'}
         opt_args = {'lr': lr, 'momentum': momentum}
-        if self.grad_mode.startswith('zero order'):
+        if self.grad_mode.startswith('zeroth_order'):
             opt_args['random_vec'] = random_vecs
             opt_args['names'] = list(n for n, _ in self.model.named_parameters())
-            print(opt_args['names'])
-
+            opt_args['grad_mode'] = grad_mode
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(self.model.parameters(), **opt_args)
 
         self.training_loss = None

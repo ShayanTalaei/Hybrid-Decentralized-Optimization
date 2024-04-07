@@ -34,6 +34,8 @@ if __name__ == "__main__":
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
     parser.add_argument("--scheduler", action="store_true", help="Whether to use a learning rate scheduler.")
     parser.add_argument("--momentum", default=0.0, type=float, help="The momentum parameter for the optimizer.")
+    parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
+    parser.add_argument("--z_grad", default="zeroth_order_simple", help="The gradient mode for the zeroth-order.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     mpi4py.rc.threads = False
@@ -54,6 +56,8 @@ if __name__ == "__main__":
         print(f"Number of First-orders: {args.fn}")
         print(f"Number of Zero-orders: {mpi4py.MPI.COMM_WORLD.Get_size() - args.fn}")
         print(f"Number of convolutional layers: {args.conv_number}")
+        print(f"First-order gradient mode: {args.f_grad}")
+        print(f"Zero-order gradient mode: {args.z_grad}")
         print(f"Using {device}")
 
     # Run the training script
@@ -76,4 +80,6 @@ if __name__ == "__main__":
                plot=args.plot,
                random_vecs=args.rv,
                momentum=args.momentum,
+               f_grad=args.f_grad,
+               z_grad=args.z_grad
                )
