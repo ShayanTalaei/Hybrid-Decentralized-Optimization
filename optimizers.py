@@ -76,7 +76,7 @@ class ZAD(Optimizer):
         # return total_loss / self.random_vec
 
         if self.grad_mode == 'zeroth_order_forward-mode_AD':
-            print('Rank:', MPI.COMM_WORLD.Get_rank(), 'start')
+            # print('Rank:', MPI.COMM_WORLD.Get_rank(), 'start')
             torch._foreach_mul_(self.grad, self.momentum)
             total_loss = 0.0
             for _ in range(self.random_vec):
@@ -94,7 +94,7 @@ class ZAD(Optimizer):
                 total_loss += loss.item()
 
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
-            print('Rank:', MPI.COMM_WORLD.Get_rank(), 'end')
+            # print('Rank:', MPI.COMM_WORLD.Get_rank(), 'end')
             return total_loss / self.random_vec
 
         if self.grad_mode == 'zeroth_order_simple':
