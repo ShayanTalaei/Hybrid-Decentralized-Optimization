@@ -4,6 +4,7 @@ import torch
 import optimizers
 from models import get_model
 from mpi4py import MPI
+import pytorch_warmup as warmup
 
 from datasets import get_criterion
 
@@ -12,13 +13,17 @@ class HybridSGDTrainer:
 
     def __init__(self, rank, size, comm, fn, grad_mode, dataset_name, train_loader, test_loader, initial_state_dict,
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
-                 momentum=0.0):
+                 momentum=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
+                 log_period=10):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
         self.comm = comm
         self.fn = fn
         self.lr = lr
+        self.total_step_number = total_step_number
+        self.log_period = log_period
+        self.warmup_steps = warmup_steps
         self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs)
 
@@ -36,7 +41,12 @@ class HybridSGDTrainer:
             opt_args['names'] = list(n for n, _ in self.model.named_parameters())
             opt_args['grad_mode'] = grad_mode
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(self.model.parameters(), **opt_args)
-
+        self.scheduler = None
+        if scheduler:
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,
+                                                                        T_max=(len(train_loader.dataset) * self.total_step_number) // train_loader.batch_size)
+        self.scheduler_warmup_steps = scheduler_warmup_steps
+        self.warmup_scheduler = warmup.ExponentialWarmup(self.optimizer, warmup_period=scheduler_warmup_steps)
         self.training_loss = None
         self.history = []
         self.steps = 0
@@ -71,15 +81,19 @@ class HybridSGDTrainer:
             except StopIteration:
                 taken_steps += 1
                 iterator = iter(self.train_loader)
+        if self.steps < self.warmup_steps:
+            self.warmup_scheduler.dampen()
+        elif self.scheduler is not None:
+            self.scheduler.step()
         return total_loss / steps
 
-    def train(self, steps, log_period):
+    def train(self):
         self.model.train()
         if self.size == 1:
-            return self.train_solo(steps, log_period)
+            return self.train_solo()
 
-        for taken_steps in range(steps):
-            if self.steps % log_period == 0:
+        for taken_steps in range(self.total_step_number + self.warmup_steps):
+            if self.steps % self.log_period == 0:
                 print(f"Rank {self.rank} steps: {self.steps}")
                 self.comm.Barrier()
                 if self.rank == 0:
@@ -92,6 +106,10 @@ class HybridSGDTrainer:
             # print(f"Rank {self.rank} steps: {self.steps} after take step")
             if loss > 10 ** 4:  # Diverged!
                 return self.history
+
+            if self.steps < self.warmup_steps:
+                self.steps += 1
+                continue
 
             # print(f"Rank {self.rank} steps: {self.steps} before lock")
 
@@ -129,10 +147,10 @@ class HybridSGDTrainer:
             self.steps += 1
         return self.history
 
-    def train_solo(self, steps, log_period):
+    def train_solo(self):
         assert self.size == 1
-        for step in range(steps):
-            if self.steps % log_period == 0:
+        for step in range(self.total_step_number):
+            if self.steps % self.log_period == 0:
                 self.evaluate()
 
             loss = self.take_step()

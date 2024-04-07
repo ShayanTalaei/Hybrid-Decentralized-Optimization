@@ -33,6 +33,10 @@ if __name__ == "__main__":
                                                           "used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
     parser.add_argument("--scheduler", action="store_true", help="Whether to use a learning rate scheduler.")
+    parser.add_argument("--scheduler_warmup_steps", default=0, type=int, help="The number of warmup steps for the "
+                                                                              "scheduler.")
+    parser.add_argument("--warmup_steps", default=0, type=int, help="The number of warmup steps before starting the "
+                                                                    "communication.")
     parser.add_argument("--momentum", default=0.0, type=float, help="The momentum parameter for the optimizer.")
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
     parser.add_argument("--z_grad", default="zeroth_order_simple", help="The gradient mode for the zeroth-order.")
@@ -58,6 +62,15 @@ if __name__ == "__main__":
         print(f"Number of convolutional layers: {args.conv_number}")
         print(f"First-order gradient mode: {args.f_grad}")
         print(f"Zero-order gradient mode: {args.z_grad}")
+        print(f"Batch size: {args.batch_size}")
+        print(f"Hidden units: {args.hidden}")
+        print(f"Random vectors: {args.rv}")
+        print(f"Model: {args.model}")
+        print(f"Freeze model: {args.freeze_model}")
+        print(f"Learning rate scheduler: {args.scheduler}")
+        print(f"Learning rate scheduler warmup steps: {args.scheduler_warmup_steps}")
+        print(f"Warmup steps: {args.warmup_steps}")
+        print(f"Momentum: {args.momentum}")
         print(f"Using {device}")
 
     # Run the training script
@@ -81,5 +94,8 @@ if __name__ == "__main__":
                random_vecs=args.rv,
                momentum=args.momentum,
                f_grad=args.f_grad,
-               z_grad=args.z_grad
+               z_grad=args.z_grad,
+               scheduler=args.scheduler,
+               scheduler_warmup_steps=args.scheduler_warmup_steps,
+               warmup_steps=args.warmup_steps,
                )
