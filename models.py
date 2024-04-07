@@ -97,14 +97,14 @@ class CustomNN(EnhancedModel):
             self.seq.append(nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3, stride=1,
                                       padding=1,
                                       bias=True))
-            self.seq.append(nn.BatchNorm2d(32))
+            # self.seq.append(nn.BatchNorm2d(32))
             self.seq.append(nn.ReLU())
             for i in range(conv_number - 1):
                 self.seq.append(nn.Conv2d(in_channels=32 * (2 ** i), out_channels=32 * (2 ** (i + 1)), kernel_size=3,
                                           stride=1,
                                           padding=1,
                                           bias=True))
-                self.seq.append(nn.BatchNorm2d(32 * (2 ** (i + 1))))
+                # self.seq.append(nn.BatchNorm2d(32 * (2 ** (i + 1))))
                 self.seq.append(nn.ReLU())
                 self.seq.append(nn.MaxPool2d(kernel_size=2))
             input_size = 32 * (2 ** (conv_number - 1)) * ((input_shape[1] // (2 ** (conv_number - 1))) *
@@ -113,14 +113,14 @@ class CustomNN(EnhancedModel):
             input_size = np.prod(input_shape)
         self.seq.append(nn.Flatten())
         self.seq.append(nn.Linear(input_size, hidden[0]))
-        self.seq.append(nn.BatchNorm1d(hidden[0]))
+        # self.seq.append(nn.BatchNorm1d(hidden[0]))
         for i in range(len(hidden) - 1):
             if activation == 'relu':
                 self.seq.append(nn.ReLU())
             else:
                 self.seq.append(nn.Tanh())
             self.seq.append(nn.Linear(hidden[i], hidden[i + 1]))
-            self.seq.append(nn.BatchNorm1d(hidden[i + 1]))
+            # self.seq.append(nn.BatchNorm1d(hidden[i + 1]))
         if sigmoid_output:
             self.seq.append(nn.Sigmoid())
         self.to(self.device)
