@@ -79,6 +79,7 @@ class HybridSGDTrainer:
 
         for taken_steps in range(steps):
             if self.steps % log_period == 0:
+                print(f"Rank {self.rank} steps: {self.steps}")
                 self.comm.Barrier()
                 if self.rank == 0:
                     self.evaluate()
