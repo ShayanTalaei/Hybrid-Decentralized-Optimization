@@ -51,30 +51,28 @@ class ZAD(Optimizer):
     @torch.no_grad()
     def optimize(self, model, data, target, criterion):
         self.set_f(model, data, target, criterion)
-        params = [p for group in self.param_groups for p in group['params']]
-        params_data = [p.data for p in params]
-        total_loss = 0.0
-        torch._foreach_mul_(self.grad, self.momentum)
-        for _ in range(self.random_vec):
-            v = [torch.rand(p.size()).to(self.device) for p in params_data]
-            loss, jvp_result = jvp(self.f, tuple(params), tuple(v))
-            total_loss += loss.item()
-            torch._foreach_mul_(v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
-            torch._foreach_add_(self.grad, v)
-            # torch._foreach_addcmul_(self.grad, v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
+        # params = [p for group in self.param_groups for p in group['params']]
+        # params_data = [p.data for p in params]
+        # total_loss = 0.0
+        # torch._foreach_mul_(self.grad, self.momentum)
+        # for _ in range(self.random_vec):
+        #     v = [torch.rand(p.size()).to(self.device) for p in params_data]
+        #     loss, jvp_result = jvp(self.f, tuple(params), tuple(v))
+        #     total_loss += loss.item()
+        #     torch._foreach_mul_(v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
+        #     torch._foreach_add_(self.grad, v)
+        #     # torch._foreach_addcmul_(self.grad, v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
+        #
+        # torch._foreach_add_(params_data, torch._foreach_mul(self.grad, -self.lr))
+        # return total_loss / self.random_vec
+        params = {name: p for name, p in model.named_parameters()}
+        tangents = {name: torch.clip(torch.rand_like(p), min=1e-5) for name, p in params.items()}
 
-        torch._foreach_add_(params_data, torch._foreach_mul(self.grad, -self.lr))
-        return total_loss / self.random_vec
-        # params = {name: p for name, p in model.named_parameters()}
-        # tangents = {name: torch.clip(torch.rand_like(p), min=1e-5) for name, p in params.items()}
-        #
-        # dual_params = {}
-        # with fwAD.dual_level():
-        #     for name, p in params.items():
-        #         # Using the same ``tangents`` from the above section
-        #         dual_params[name] = fwAD.make_dual(p, tangents[name])
-        #     out = functional_call(model, dual_params, data)
-        #     jvp = fwAD.unpack_dual(out).tangent
-        #
-        #     loss = criterion(out, target)
-        #     return loss.item()
+        dual_params = {}
+        with fwAD.dual_level():
+            for name, p in params.items():
+                dual_params[name] = fwAD.make_dual(p, tangents[name])
+            loss = functional_call(self.f, dual_params)
+            jvp = fwAD.unpack_dual(loss).tangent
+            print(jvp)
+            return loss.item()
