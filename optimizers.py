@@ -59,8 +59,9 @@ class ZAD(Optimizer):
             v = [torch.rand(p.size()).to(self.device) for p in params_data]
             loss, jvp_result = jvp(self.f, tuple(params), tuple(v))
             total_loss += loss.item()
-            # torch._foreach_mul_(v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
-            torch._foreach_addcmul_(self.grad, v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
+            torch._foreach_mul_(v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
+            torch._foreach_add_(self.grad, v)
+            # torch._foreach_addcmul_(self.grad, v, jvp_result.item() * (1 - self.momentum) / self.random_vec)
 
         torch._foreach_addcmul_(params_data, self.grad, -self.lr)
         return total_loss / self.random_vec
