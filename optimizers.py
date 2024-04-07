@@ -41,6 +41,7 @@ class ZAD(Optimizer):
         self.params = [p for group in self.param_groups for p in group['params']]
         self.params_data = [p.data for p in params]
         self.names = names
+        print('ss ', self.names)
         self.params_dict = {name: p for name, p in zip(self.names, self.params)}
 
 

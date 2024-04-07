@@ -34,6 +34,7 @@ class HybridSGDTrainer:
         if self.grad_mode.startswith('zero order'):
             opt_args['random_vec'] = random_vecs
             opt_args['names'] = list(n for n, _ in self.model.named_parameters())
+            print(opt_args['names'])
 
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(self.model.parameters(), **opt_args)
 
