@@ -62,7 +62,6 @@ class HybridSGDTrainer:
 
         self.model_copy = torch.empty(model_size, dtype=torch.float64, device='cpu')
         self.partner_model = torch.empty(model_size, dtype=torch.float64, device='cpu')
-        self.model_to_copy(self.partner_model)
         self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                   self.partner_model.nelement() * self.partner_model.element_size())
         buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
@@ -97,8 +96,7 @@ class HybridSGDTrainer:
             if self.steps % self.log_period == 0:
                 print(f"Rank {self.rank} steps: {self.steps}")
                 self.comm.Barrier()
-                if self.rank == 0:
-                    self.evaluate()
+                self.evaluate()
                 self.comm.Barrier()
 
             # print(f"Rank {self.rank} steps: {self.steps} before take step")
@@ -140,7 +138,7 @@ class HybridSGDTrainer:
             self.win.Unlock(partner_rank)
             # print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
 
-            self.partner_model[:] = (self.partner_model + self.model_copy) / 2
+            self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
 
             self.copy_to_model(self.partner_model)
             # print(f"Rank {self.rank} steps: {self.steps} after copy to model")
@@ -167,7 +165,7 @@ class HybridSGDTrainer:
         validation_loss = result['Loss']
         validation_accuracy = result['Accuracy']
         training_loss = self.training_loss if self.training_loss else 0
-        print(
+        print(f"Rank {self.rank}: " +
             "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
             .format(self.steps,
                     training_loss,
