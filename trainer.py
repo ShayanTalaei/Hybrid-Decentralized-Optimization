@@ -72,7 +72,7 @@ class HybridSGDTrainer:
         taken_steps = 0
         total_loss = 0
         while taken_steps < steps:
-            print("Rank: ", self.rank, 'optimize')
+            # print("Rank: ", self.rank, 'optimize')
             data, target = data.to(self.model.device), target.to(self.model.device)
             loss = self.optimizer.optimize(self.model, data, target, self.criterion)
             taken_steps += 1
@@ -90,7 +90,7 @@ class HybridSGDTrainer:
         for taken_steps in range(self.total_step_number + self.warmup_steps):
             step_loss = 0
             if self.steps % self.log_period == 0:
-                print(f"Rank {self.rank} steps: {self.steps}")
+                print(f"Rank {self.rank} steps: {self.steps} evaluate")
                 self.comm.Barrier()
                 self.evaluate()
                 self.comm.Barrier()
