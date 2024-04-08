@@ -106,8 +106,6 @@ class HybridSGDTrainer:
             if loss > 10 ** 4:  # Diverged!
                 return self.history
             print(f"Rank {self.rank} steps: {self.steps}, loss: {loss}")
-            if loss == 0:
-                print(f"Rank {self.rank} model: {self.model.parameters()}")
             self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
             if self.steps < self.warmup_steps:
                 self.steps += 1
