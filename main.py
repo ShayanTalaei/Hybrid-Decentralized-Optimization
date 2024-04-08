@@ -28,7 +28,6 @@ if __name__ == "__main__":
     parser.add_argument("--save", action="store_true", help="Whether to save the trained model.")
     parser.add_argument("--path", default="./", help="The directory where the trained model should be saved.")
     parser.add_argument("--criterion", default="cross_entropy", help="The loss function to use for training.")
-    parser.add_argument("--verbose", action="store_true", help="Whether to print detailed training progress.")
     parser.add_argument("--model", default="resnet", help="The model to use for training. If None, a default model is "
                                                           "used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
@@ -40,6 +39,7 @@ if __name__ == "__main__":
     parser.add_argument("--momentum", default=0.0, type=float, help="The momentum parameter for the optimizer.")
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
     parser.add_argument("--z_grad", default="zeroth_order_simple", help="The gradient mode for the zeroth-order.")
+    parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     mpi4py.rc.threads = False
@@ -57,9 +57,9 @@ if __name__ == "__main__":
         print(f"Learning rates: Zero-order: {args.lr0}, First-order: {args.lr1}")
         print(f"Steps: {args.steps}")
         print(f"Number of layer: {args.num_layer}")
+        print(f"Number of convolutional layers: {args.conv_number}")
         print(f"Number of First-orders: {args.fn}")
         print(f"Number of Zero-orders: {mpi4py.MPI.COMM_WORLD.Get_size() - args.fn}")
-        print(f"Number of convolutional layers: {args.conv_number}")
         print(f"First-order gradient mode: {args.f_grad}")
         print(f"Zero-order gradient mode: {args.z_grad}")
         print(f"Batch size: {args.batch_size}")
@@ -70,7 +70,10 @@ if __name__ == "__main__":
         print(f"Learning rate scheduler: {args.scheduler}")
         print(f"Learning rate scheduler warmup steps: {args.scheduler_warmup_steps}")
         print(f"Warmup steps: {args.warmup_steps}")
+        print(f"v_step: {args.v_step}")
         print(f"Momentum: {args.momentum}")
+        print(f"Log period: {args.log_period}")
+        print(f"Plot: {args.plot}")
         print(f"Using {device}")
 
     # Run the training script
@@ -98,4 +101,5 @@ if __name__ == "__main__":
                scheduler=args.scheduler,
                scheduler_warmup_steps=args.scheduler_warmup_steps,
                warmup_steps=args.warmup_steps,
+               v_step=args.v_step,
                )
