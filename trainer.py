@@ -44,9 +44,9 @@ class HybridSGDTrainer:
         self.scheduler = None
         if scheduler:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,
-                                                                        T_max=self.total_step_number)
+                                                                        T_max=self.total_step_number * len(train_loader))
         self.scheduler_warmup_steps = scheduler_warmup_steps
-        self.warmup_scheduler = warmup.LinearWarmup(self.optimizer, warmup_period=scheduler_warmup_steps)
+        self.warmup_scheduler = warmup.LinearWarmup(self.optimizer, warmup_period=scheduler_warmup_steps * len(train_loader))
         self.training_loss = None
         self.history = []
         self.steps = 0
