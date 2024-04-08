@@ -60,7 +60,7 @@ class ZAD(Optimizer):
     @torch.no_grad()
     def optimize(self, model, data, target, criterion):
         self.lr = self.param_groups[0]['lr']
-        print('Rank:', MPI.COMM_WORLD.Get_rank(), 'lr:', self.lr)
+        # print('Rank:', MPI.COMM_WORLD.Get_rank(), 'lr:', self.lr)
         # self.set_f(model, data, target, criterion)
         # params = [p for group in self.param_groups for p in group['params']]
         # params_data = [p.data for p in params]
