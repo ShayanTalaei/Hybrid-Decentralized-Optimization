@@ -30,9 +30,9 @@ class SGD(torch.optim.SGD):
 class ZAD(Optimizer):
     name = 'ZAD'
 
-    def __init__(self, params, lr=0.001, random_vec=10, momentum=0.9, names=None, grad_mode='zeroth order simple'):
+    def __init__(self, params, lr=0.001, random_vec=10, momentum=0.9, names=None, grad_mode='zeroth order simple', v_step=10.0):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum)
+        defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode, v_step=v_step)
         super(ZAD, self).__init__(params, defaults)
         self.lr = lr
         self.random_vec = random_vec
@@ -45,6 +45,7 @@ class ZAD(Optimizer):
         assert grad_mode in ['zeroth_order_simple', 'zeroth_order_forward-mode_AD']
         self.grad_mode = grad_mode
         self.params_dict = {name: p for name, p in zip(self.names, self.params)}
+        self.v_step = v_step
 
 
 
@@ -109,13 +110,13 @@ class ZAD(Optimizer):
                 torch._foreach_div_(v, v_norm)
                 params_v = copy.deepcopy(self.params_dict)
                 for p, v_ in zip(params_v.items(), v):
-                    p[1].data += v_
+                    p[1].data += v_ * self.v_step
 
                 lossv = criterion(functional_call(model, params_v, data), target).item()
                 loss = criterion(functional_call(model, self.params_dict, data), target).item()
 
                 total_loss += loss
-                torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / self.random_vec)
+                torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / (self.random_vec * self.v_step))
                 torch._foreach_add_(self.grad, v)
 
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
