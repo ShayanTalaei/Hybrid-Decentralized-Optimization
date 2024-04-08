@@ -114,6 +114,7 @@ class ZAD(Optimizer):
 
                 lossv = criterion(functional_call(model, params_v, data), target).item()
                 loss = criterion(functional_call(model, self.params_dict, data), target).item()
+                print('Rank:', MPI.COMM_WORLD.Get_rank(), 'loss:', loss, 'lossv:', lossv)
 
                 total_loss += loss
                 torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / (self.random_vec * self.v_step))
