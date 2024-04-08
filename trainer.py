@@ -74,6 +74,7 @@ class HybridSGDTrainer:
         total_loss = 0
         while taken_steps < steps:
             try:
+                print("Rank: ", self.rank, 'optimize')
                 Xb, yb = next(self.train_iterator)
                 Xb, yb = Xb.to(self.model.device), yb.to(self.model.device)
                 loss = self.optimizer.optimize(self.model, Xb, yb, self.criterion)
