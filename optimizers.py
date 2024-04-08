@@ -101,8 +101,8 @@ class ZAD(Optimizer):
             return total_loss / self.random_vec
 
         if self.grad_mode == 'zeroth_order_simple':
-            total_loss = 0.0
             torch._foreach_mul_(self.grad, self.momentum)
+            loss = criterion(functional_call(model, self.params_dict, data), target).item()
             for _ in range(self.random_vec):
                 v = [torch.randn(p.size()).to(self.device) for p in self.params_data]
                 # v_norm = torch._foreach_norm(v)
@@ -111,15 +111,11 @@ class ZAD(Optimizer):
                 params_v = copy.deepcopy(self.params_dict)
                 for p, v_ in zip(params_v.items(), v):
                     p[1].data += v_ * self.v_step
-
                 lossv = criterion(functional_call(model, params_v, data), target).item()
-                loss = criterion(functional_call(model, self.params_dict, data), target).item()
-
-                total_loss += loss
                 torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / (self.random_vec * self.v_step))
                 torch._foreach_add_(self.grad, v)
 
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.max(torch.tensor(torch._foreach_norm(self.grad))))
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
-            return total_loss / self.random_vec
+            return loss
 
