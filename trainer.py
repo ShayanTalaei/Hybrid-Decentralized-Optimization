@@ -85,24 +85,26 @@ class HybridSGDTrainer:
             return self.train_solo()
 
         for taken_steps in range(self.total_step_number + self.warmup_steps):
-            step_loss = 0
-            if self.steps % self.log_period == 0:
-                print(f"Rank {self.rank} steps: {self.steps} evaluate")
-                self.comm.Barrier()
-                self.evaluate()
-                self.comm.Barrier()
+            # step_loss = 0
             for (data, target) in self.train_loader:
 
+                if self.steps % self.log_period == 0:
+                    print(f"Rank {self.rank} steps: {self.steps} evaluate")
+                    self.comm.Barrier()
+                    self.evaluate()
+                    self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
                 loss = self.take_step(data, target)
-                step_loss += loss
+                # step_loss += loss
                 # print(f"Rank {self.rank} steps: {self.steps} after take step")
                 if loss > 10 ** 4:  # Diverged!
+                    # step_loss /= len(self.train_loader)
+                    # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
+                    self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     return self.history
                 if self.steps < self.warmup_steps:
-                    step_loss /= len(self.train_loader)
-                    self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
+                    self.steps += 1
                     continue
 
                 # print(f"Rank {self.rank} steps: {self.steps} before lock")
@@ -135,10 +137,12 @@ class HybridSGDTrainer:
                 self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
 
                 self.copy_to_model(self.partner_model)
+                self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+                self.steps += 1
                 # print(f"Rank {self.rank} steps: {self.steps} after copy to model")
-            step_loss /= len(self.train_loader)
-            self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
-            self.steps += 1
+            # step_loss /= len(self.train_loader)
+            # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
+            # self.steps += 1
             with self.warmup_scheduler.dampening():
                 if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
                     self.scheduler.step()
@@ -147,18 +151,21 @@ class HybridSGDTrainer:
     def train_solo(self):
         assert self.size == 1
         for step in range(self.total_step_number):
-            if self.steps % self.log_period == 0:
-                self.evaluate()
-            step_loss = 0
+            # step_loss = 0
             for (data, target) in self.train_loader:
+                if self.steps % self.log_period == 0:
+                    self.evaluate()
                 loss = self.take_step(data, target)
-                step_loss += loss
+                # step_loss += loss
                 if loss > 10 ** 4:  # Diverged!
-                    step_loss /= len(self.train_loader)
-                    self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
+                    # step_loss /= len(self.train_loader)
+                    # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
+                    self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     return self.history
-            self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
-            self.steps += 1
+                self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+                self.steps += 1
+            # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
+            # self.steps += 1
             with self.warmup_scheduler.dampening():
                 if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
                     self.scheduler.step()
