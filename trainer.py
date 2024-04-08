@@ -82,9 +82,9 @@ class HybridSGDTrainer:
             except StopIteration:
                 taken_steps += 1
                 iterator = iter(self.train_loader)
-        # with self.warmup_scheduler.dampening():
-        #     if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
-        #         self.scheduler.step()
+        with self.warmup_scheduler.dampening():
+            if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
+                self.scheduler.step()
         return total_loss / steps
 
     def train(self):
@@ -106,6 +106,8 @@ class HybridSGDTrainer:
             if loss > 10 ** 4:  # Diverged!
                 return self.history
             print(f"Rank {self.rank} steps: {self.steps}, loss: {loss}")
+            if loss == 0:
+                print(f"Rank {self.rank} model: {self.model.parameters()}")
             self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
             if self.steps < self.warmup_steps:
                 self.steps += 1
