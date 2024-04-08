@@ -62,6 +62,7 @@ class HybridSGDTrainer:
 
         self.model_copy = torch.empty(model_size, dtype=torch.float64, device='cpu')
         self.partner_model = torch.empty(model_size, dtype=torch.float64, device='cpu')
+        self.model_to_copy(self.partner_model)
         self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                   self.partner_model.nelement() * self.partner_model.element_size())
         buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
@@ -106,7 +107,7 @@ class HybridSGDTrainer:
             # print(f"Rank {self.rank} steps: {self.steps} after take step")
             if loss > 10 ** 4:  # Diverged!
                 return self.history
-
+            print(f"Rank {self.rank} steps: {self.steps}, loss: {loss}")
             self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
             if self.steps < self.warmup_steps:
                 self.steps += 1
