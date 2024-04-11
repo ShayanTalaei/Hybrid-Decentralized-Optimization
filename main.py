@@ -38,7 +38,7 @@ if __name__ == "__main__":
                                                                     "communication.")
     parser.add_argument("--momentum", default=0.0, type=float, help="The momentum parameter for the optimizer.")
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
-    parser.add_argument("--z_grad", default="zeroth_order_simple", help="The gradient mode for the zeroth-order.")
+    parser.add_argument("--z_grad", default="zeroth_order_cge", help="The gradient mode for the zeroth-order.")
     parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'

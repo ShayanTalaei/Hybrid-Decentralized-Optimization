@@ -30,10 +30,10 @@ class HybridSGDTrainer:
         self.model.load_state_dict(initial_state_dict)
         self.test_loader = test_loader
         self.train_loader = train_loader
-        assert grad_mode in ['first_order', 'zeroth_order_forward-mode_AD', 'zeroth_order_simple']
+        assert grad_mode in ['first_order', 'zeroth_order_forward-mode_AD', 'zeroth_order_rge', 'zeroth_order_cge']
         self.grad_mode = grad_mode
         self.criterion = get_criterion(dataset_name)
-        grad_mode_to_opt = {'first_order': 'SGD', 'zeroth_order_forward-mode_AD': 'ZAD', 'zeroth_order_simple': 'ZAD'}
+        grad_mode_to_opt = {'first_order': 'SGD', 'zeroth_order_forward-mode_AD': 'ZAD', 'zeroth_order_rge': 'ZAD', 'zeroth_order_cge': 'ZAD'}
         opt_args = {'lr': lr, 'momentum': momentum}
         if self.grad_mode.startswith('zeroth_order'):
             opt_args['random_vec'] = random_vecs

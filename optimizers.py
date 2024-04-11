@@ -1,12 +1,20 @@
-import copy
+from copy import deepcopy
 
 from torch.optim import Optimizer
 import torch
 import torch.autograd.forward_ad as fwAD
 from torch.func import functional_call
 from torch.func import jvp
+# from torch.autograd.functional import vhp
 from mpi4py import MPI
 
+
+def extract_mask(model_dict):
+    new_dict = {}
+    for key in model_dict.keys():
+        if 'mask' in key:
+            new_dict[key] = deepcopy(model_dict[key])
+    return new_dict
 
 
 class SGD(torch.optim.SGD):
@@ -30,9 +38,11 @@ class SGD(torch.optim.SGD):
 class ZAD(Optimizer):
     name = 'ZAD'
 
-    def __init__(self, params, lr=0.001, random_vec=10, momentum=0.9, names=None, grad_mode='zeroth order simple', v_step=10.0):
+    def __init__(self, params, lr=0.001, random_vec=10, momentum=0.9, names=None, grad_mode='zeroth_order_rge',
+                 v_step=10.0):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode, v_step=v_step)
+        defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode,
+                        v_step=v_step)
         super(ZAD, self).__init__(params, defaults)
         self.lr = lr
         self.random_vec = random_vec
@@ -42,11 +52,19 @@ class ZAD(Optimizer):
         self.params = [p for group in self.param_groups for p in group['params']]
         self.params_data = [p.data for p in self.params]
         self.names = names
-        assert grad_mode in ['zeroth_order_simple', 'zeroth_order_forward-mode_AD']
+        assert grad_mode in ['zeroth_order_rge', 'zeroth_order_forward-mode_AD', 'zeroth_order_cge']
         self.grad_mode = grad_mode
         self.params_dict = {name: p for name, p in zip(self.names, self.params)}
         self.v_step = v_step
-
+        # self.params_mask = None
+        # if grad_mode == 'zeroth_order_cge':
+        #     self.params_mask = []
+        #     for p in self.params_data:
+        #         p_tmp = p.reshape(-1)
+        #         for i in range(len(p_tmp)):
+        #             p_tmp = torch.zeros_like(p_tmp)
+        #             p_tmp[i] = 1
+        #             self.params_mask.append(p_tmp.reshape(p.size()).to(self.device))
 
 
     def set_f(self, model, data, target, criterion):
@@ -99,7 +117,7 @@ class ZAD(Optimizer):
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), 'end')
             return total_loss / self.random_vec
 
-        if self.grad_mode == 'zeroth_order_simple':
+        elif self.grad_mode == 'zeroth_order_rge':
             torch._foreach_mul_(self.grad, self.momentum)
             loss = criterion(functional_call(model, self.params_dict, data), target).item()
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), ' in opt loss:', loss)
@@ -108,7 +126,7 @@ class ZAD(Optimizer):
                 # v_norm = torch._foreach_norm(v)
                 # torch._foreach_add_(v_norm, 1e-8)
                 # torch._foreach_div_(v, v_norm)
-                params_v = copy.deepcopy(self.params_dict)
+                params_v = deepcopy(self.params_dict)
                 for p, v_ in zip(params_v.items(), v):
                     p[1].data += v_ * self.v_step
                 lossv = criterion(functional_call(model, params_v, data), target).item()
@@ -119,3 +137,38 @@ class ZAD(Optimizer):
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
             return loss
 
+        elif self.grad_mode == 'zeroth_order_cge':
+            torch._foreach_mul_(self.grad, self.momentum)
+            params_v = deepcopy(self.params_dict)
+            loss = criterion(functional_call(model, self.params_dict, data), target).item()
+            for i, key, param in enumerate(self.params_dict.items()):
+                for j in range(param.numel()):
+                    if j != 0:
+                        params_v[key].data.view(-1)[j-1] -= self.v_step
+                    params_v[key].data.view(-1)[j] += self.v_step
+                    loss_v = criterion(functional_call(model, params_v, data), target).item()
+                    self.grad[i].view(-1)[j] = (1 - self.momentum) * (loss_v - loss) / self.v_step
+                params_v[key].data.view(-1)[param.numel()-1] -= self.v_step
+
+            torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
+            return loss
+
+
+def cge(func, params_dict, mask_dict, step_size, base=None):
+
+    grads_dict = {}
+    for key, param in params_dict.items():
+        if 'orig' in key:
+            mask_key = key.replace('orig', 'mask')
+            mask_flat = mask_dict[mask_key].flatten()
+        else:
+            mask_flat = torch.ones_like(param).flatten()
+        directional_derivative = torch.zeros_like(param)
+        directional_derivative_flat = directional_derivative.flatten()
+        for idx in mask_flat.nonzero().flatten():
+            perturbed_params_dict = deepcopy(params_dict)
+            p_flat = perturbed_params_dict[key].flatten()
+            p_flat[idx] += step_size
+            directional_derivative_flat[idx] = (func(perturbed_params_dict) - base) / step_size
+        grads_dict[key] = directional_derivative.to(param.device)
+    return grads_dict
