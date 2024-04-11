@@ -14,7 +14,7 @@ class HybridSGDTrainer:
     def __init__(self, rank, size, comm, fn, grad_mode, dataset_name, train_loader, test_loader, initial_state_dict,
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
                  momentum=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
-                 log_period=10, v_step=10.0, out_channels=out_channels):
+                 log_period=10, v_step=10.0, out_channels=8):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
