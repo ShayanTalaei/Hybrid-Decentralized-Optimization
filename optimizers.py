@@ -142,7 +142,6 @@ class ZAD(Optimizer):
             params_v = deepcopy(self.params_dict)
             loss = criterion(functional_call(model, self.params_dict, data), target).item()
             for i, (key, param) in enumerate(self.params_dict.items()):
-                print(i, key, param.numel())
                 for j in range(param.numel()):
                     if j != 0:
                         params_v[key].data.view(-1)[j-1] -= self.v_step
@@ -154,22 +153,3 @@ class ZAD(Optimizer):
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
             return loss
 
-
-def cge(func, params_dict, mask_dict, step_size, base=None):
-
-    grads_dict = {}
-    for key, param in params_dict.items():
-        if 'orig' in key:
-            mask_key = key.replace('orig', 'mask')
-            mask_flat = mask_dict[mask_key].flatten()
-        else:
-            mask_flat = torch.ones_like(param).flatten()
-        directional_derivative = torch.zeros_like(param)
-        directional_derivative_flat = directional_derivative.flatten()
-        for idx in mask_flat.nonzero().flatten():
-            perturbed_params_dict = deepcopy(params_dict)
-            p_flat = perturbed_params_dict[key].flatten()
-            p_flat[idx] += step_size
-            directional_derivative_flat[idx] = (func(perturbed_params_dict) - base) / step_size
-        grads_dict[key] = directional_derivative.to(param.device)
-    return grads_dict
