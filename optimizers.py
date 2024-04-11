@@ -142,6 +142,7 @@ class ZAD(Optimizer):
             params_v = deepcopy(self.params_dict)
             loss = criterion(functional_call(model, self.params_dict, data), target).item()
             for i, (key, param) in enumerate(self.params_dict.items()):
+                print('Rank:', MPI.COMM_WORLD.Get_rank(), key, param.numel())
                 for j in range(param.numel()):
                     if j != 0:
                         params_v[key].data.view(-1)[j-1] -= self.v_step
