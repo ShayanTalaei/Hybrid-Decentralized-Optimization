@@ -40,6 +40,7 @@ if __name__ == "__main__":
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
     parser.add_argument("--z_grad", default="zeroth_order_cge", help="The gradient mode for the zeroth-order.")
     parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
+    parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     mpi4py.rc.threads = False
@@ -58,6 +59,8 @@ if __name__ == "__main__":
         print(f"Steps: {args.steps}")
         print(f"Number of layer: {args.num_layer}")
         print(f"Number of convolutional layers: {args.conv_number}")
+        print(f"Out channels: {args.out_channels}")
+        print(f"Dataset: {args.dataset}")
         print(f"Number of First-orders: {args.fn}")
         print(f"Number of Zero-orders: {mpi4py.MPI.COMM_WORLD.Get_size() - args.fn}")
         print(f"First-order gradient mode: {args.f_grad}")
@@ -102,4 +105,5 @@ if __name__ == "__main__":
                scheduler_warmup_steps=args.scheduler_warmup_steps,
                warmup_steps=args.warmup_steps,
                v_step=args.v_step,
+               out_channels=args.out_channels
                )

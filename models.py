@@ -8,18 +8,18 @@ from datasets import get_model_shape
 
 
 def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model_name=None,
-                        freeze_model=False):
+                        freeze_model=False, out_channels=8):
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
     if model_name == 'resnet':
         model = ResNetModel(n_class, freeze=freeze_model)
     else:
-        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number)
+        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels)
     state_dict = model.state_dict()
     return state_dict
 
 
-def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, **kwargs):
+def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels=8, **kwargs):
     kwargs['dataset_name'] = dataset_name
     input_shape, n_class = get_model_shape(dataset_name)
     hidden_layers = [hidden] * num_layer
@@ -27,7 +27,7 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, **kwargs):
     if kwargs['model_name'] == 'resnet':
         model = ResNetModel(n_class, freeze=kwargs['freeze_model'], **kwargs)
     else:
-        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number)
+        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels)
 
     return model
 
@@ -81,7 +81,7 @@ class CustomNN(EnhancedModel):
     Simple feedforward neural network.
     """
 
-    def __init__(self, input_shape, hidden, activation='relu', sigmoid_output=True, conv_number=1,
+    def __init__(self, input_shape, hidden, activation='relu', sigmoid_output=True, conv_number=1, out_channels=8,
                  **kwargs):
         """
         Initialize the neural network.
@@ -94,20 +94,20 @@ class CustomNN(EnhancedModel):
         super().__init__(**kwargs)
         self.seq = nn.Sequential()
         if conv_number > 0:
-            self.seq.append(nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3, stride=1,
+            self.seq.append(nn.Conv2d(in_channels=input_shape[0], out_channels=out_channels, kernel_size=3, stride=1,
                                       padding=1,
                                       bias=True))
             self.seq.append(nn.BatchNorm2d(32))
             self.seq.append(nn.ReLU())
             for i in range(conv_number - 1):
-                self.seq.append(nn.Conv2d(in_channels=32 * (2 ** i), out_channels=32 * (2 ** (i + 1)), kernel_size=3,
+                self.seq.append(nn.Conv2d(in_channels=out_channels * (2 ** i), out_channels=out_channels * (2 ** (i + 1)), kernel_size=3,
                                           stride=1,
                                           padding=1,
                                           bias=True))
-                self.seq.append(nn.BatchNorm2d(32 * (2 ** (i + 1))))
+                self.seq.append(nn.BatchNorm2d(out_channels * (2 ** (i + 1))))
                 self.seq.append(nn.ReLU())
                 self.seq.append(nn.MaxPool2d(kernel_size=2))
-            input_size = 32 * (2 ** (conv_number - 1)) * ((input_shape[1] // (2 ** (conv_number - 1))) *
+            input_size = out_channels * (2 ** (conv_number - 1)) * ((input_shape[1] // (2 ** (conv_number - 1))) *
                                                           (input_shape[2] // (2 ** (conv_number - 1))))
         else:
             input_size = np.prod(input_shape)
