@@ -97,7 +97,7 @@ class CustomNN(EnhancedModel):
             self.seq.append(nn.Conv2d(in_channels=input_shape[0], out_channels=out_channels, kernel_size=3, stride=1,
                                       padding=1,
                                       bias=True))
-            self.seq.append(nn.BatchNorm2d(32))
+            self.seq.append(nn.BatchNorm2d(out_channels))
             self.seq.append(nn.ReLU())
             for i in range(conv_number - 1):
                 self.seq.append(nn.Conv2d(in_channels=out_channels * (2 ** i), out_channels=out_channels * (2 ** (i + 1)), kernel_size=3,
