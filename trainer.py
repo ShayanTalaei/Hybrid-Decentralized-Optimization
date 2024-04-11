@@ -79,6 +79,9 @@ class HybridSGDTrainer:
             loss = self.optimizer.optimize(self.model, data, target, self.criterion)
             taken_steps += 1
             total_loss += loss
+        with self.warmup_scheduler.dampening():
+            if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
+                self.scheduler.step()
         return total_loss / steps
 
     def train(self):
@@ -145,9 +148,6 @@ class HybridSGDTrainer:
             # step_loss /= len(self.train_loader)
             # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
             # self.steps += 1
-            with self.warmup_scheduler.dampening():
-                if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
-                    self.scheduler.step()
         return self.history
 
     def train_solo(self):
@@ -168,9 +168,6 @@ class HybridSGDTrainer:
                 self.steps += 1
             # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
             # self.steps += 1
-            with self.warmup_scheduler.dampening():
-                if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
-                    self.scheduler.step()
         return self.history
 
     def evaluate(self):
