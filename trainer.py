@@ -80,7 +80,7 @@ class HybridSGDTrainer:
             taken_steps += 1
             total_loss += loss
         with self.warmup_scheduler.dampening():
-            if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
+            if self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps * len(self.train_loader):
                 self.scheduler.step()
         return total_loss / steps
 
