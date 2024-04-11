@@ -142,12 +142,13 @@ class ZAD(Optimizer):
             params_v = deepcopy(self.params_dict)
             loss = criterion(functional_call(model, self.params_dict, data), target).item()
             for i, (key, param) in enumerate(self.params_dict.items()):
+                print(i, key, param.numel())
                 for j in range(param.numel()):
                     if j != 0:
                         params_v[key].data.view(-1)[j-1] -= self.v_step
                     params_v[key].data.view(-1)[j] += self.v_step
                     loss_v = criterion(functional_call(model, params_v, data), target).item()
-                    self.grad[i].view(-1)[j] = (1 - self.momentum) * (loss_v - loss) / self.v_step
+                    self.grad[i].view(-1)[j] += (1 - self.momentum) * (loss_v - loss) / self.v_step
                 params_v[key].data.view(-1)[param.numel()-1] -= self.v_step
 
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
