@@ -141,7 +141,7 @@ class ZAD(Optimizer):
             torch._foreach_mul_(self.grad, self.momentum)
             params_v = deepcopy(self.params_dict)
             loss = criterion(functional_call(model, self.params_dict, data), target).item()
-            for i, key, param in enumerate(self.params_dict.items()):
+            for i, (key, param) in enumerate(self.params_dict.items()):
                 for j in range(param.numel()):
                     if j != 0:
                         params_v[key].data.view(-1)[j-1] -= self.v_step
