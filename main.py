@@ -15,7 +15,8 @@ if __name__ == "__main__":
     parser.add_argument("--hidden", default=128, type=int, help="The number of hidden units in the model.")
     parser.add_argument("--num_layer", default=2, type=int, help="The number of layers in the model.")
     parser.add_argument("--conv_number", default=2, type=int, help="The number of convolutional layers in the model.")
-    parser.add_argument("--batch_size", default=25, type=int, help="The batch size for training.")
+    parser.add_argument("--f_batch_size", default=25, type=int, help="The first order optimizer batch size.")
+    parser.add_argument("--z_batch_size", default=100, type=int, help="The zero order optimizer batch size.")
     parser.add_argument("--plot", action="store_true", help="Whether to plot the training and validation curves.")
     parser.add_argument("--lr0", default=0.0001, type=float, help="The learning rate for zero-order optimizers.")
     parser.add_argument("--lr1", default=0.0001, type=float, help="The learning rate for first-order optimizers.")
@@ -65,7 +66,8 @@ if __name__ == "__main__":
         print(f"Number of Zero-orders: {mpi4py.MPI.COMM_WORLD.Get_size() - args.fn}")
         print(f"First-order gradient mode: {args.f_grad}")
         print(f"Zero-order gradient mode: {args.z_grad}")
-        print(f"Batch size: {args.batch_size}")
+        print(f"First-order batch size: {args.f_batch_size}")
+        print(f"Zero-order batch size: {args.z_batch_size}")
         print(f"Hidden units: {args.hidden}")
         print(f"Random vectors: {args.rv}")
         print(f"Model: {args.model}")
@@ -93,7 +95,6 @@ if __name__ == "__main__":
                reps=1,
                path=args.path,
                file_name=None,
-               batch_size=args.batch_size,
                model_name=args.model,
                freeze_model=args.freeze_model,
                plot=args.plot,
@@ -105,5 +106,7 @@ if __name__ == "__main__":
                scheduler_warmup_steps=args.scheduler_warmup_steps,
                warmup_steps=args.warmup_steps,
                v_step=args.v_step,
-               out_channels=args.out_channels
+               out_channels=args.out_channels,
+               f_batch_size=args.f_batch_size,
+               z_batch_size=args.z_batch_size
                )

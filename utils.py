@@ -45,9 +45,9 @@ def plot_trends(trends, x_axis, y_axis, start=0, path=None, end=float('inf'), da
 
 
 def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128, num_layer=2, reps=1, path=None,
-        file_name=None, batch_size=100, model_name=None, freeze_model=False, plot=False, random_vecs=200,
+        file_name=None, model_name=None, freeze_model=False, plot=False, random_vecs=200,
         num_workers=2, momentum=0.0, f_grad='first_order', z_grad='zeroth_order_cge', scheduler=False,
-        scheduler_warmup_steps=0, warmup_steps=0, v_step=10.0, out_channels=8):
+        scheduler_warmup_steps=0, warmup_steps=0, v_step=10.0, out_channels=8, f_batch_size=100, z_batch_size=100):
     results = {}
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -60,9 +60,11 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             if is_first:
                 grad_mode = f_grad
                 sampler = torch.utils.data.DistributedSampler(train_set, fn, rank)
+                batch_size = f_batch_size
             else:
                 grad_mode = z_grad
                 sampler = torch.utils.data.DistributedSampler(train_set, size - fn, rank - fn)
+                batch_size = z_batch_size
             train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler,
                                                        num_workers=num_workers)
             test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, num_workers=num_workers)
