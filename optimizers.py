@@ -130,11 +130,13 @@ class ZAD(Optimizer):
                 for p, v_ in zip(params_v.items(), v):
                     p[1].data += v_ * self.v_step
                 lossv = criterion(functional_call(model, params_v, data), target).item()
+                if lossv is None or (1-self.momentum) * (lossv - loss) / (self.random_vec * self.v_step) is None:
+                    print('Rank:', MPI.COMM_WORLD.Get_rank(), 'lossv:', lossv, 'loss:', loss)
                 torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / (self.random_vec * self.v_step))
                 torch._foreach_add_(self.grad, v)
 
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.max(torch.tensor(torch._foreach_norm(self.grad))))
-            print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.isnan(torch.tensor(torch._foreach_norm(self.grad))).any())
+            # print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.isnan(torch.tensor(torch._foreach_norm(self.grad))).any())
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
             return loss
 
