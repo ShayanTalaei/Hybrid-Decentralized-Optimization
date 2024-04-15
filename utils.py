@@ -113,8 +113,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
 
     if file_name:
         torch.save(results, path + f"results/{dataset_name}/{file_name}_{rank}")
-    if rank == 0 and plot:
-        name = 'test'
-        os.makedirs(f'{path}/results/{dataset_name}', exist_ok=True)
-        plot_trends(results, 'Steps', 'Training loss', 100, path=path, dataset_folder=dataset_name, name=name)
+    # if rank == 0 and plot:
+    #     name = 'test'
+    #     os.makedirs(f'{path}/results/{dataset_name}', exist_ok=True)
+    #     plot_trends(results, 'Steps', 'Training loss', 100, path=path, dataset_folder=dataset_name, name=name)
     return results

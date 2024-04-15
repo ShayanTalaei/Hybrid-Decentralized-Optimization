@@ -42,6 +42,7 @@ if __name__ == "__main__":
     parser.add_argument("--z_grad", default="zeroth_order_cge", help="The gradient mode for the zeroth-order.")
     parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
+    parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     mpi4py.rc.threads = False
@@ -79,6 +80,7 @@ if __name__ == "__main__":
         print(f"Momentum: {args.momentum}")
         print(f"Log period: {args.log_period}")
         print(f"Plot: {args.plot}")
+        print(f"File name: {args.file_name}")
         print(f"Using {device}")
 
     # Run the training script
@@ -94,7 +96,7 @@ if __name__ == "__main__":
                num_layer=args.num_layer,
                reps=1,
                path=args.path,
-               file_name=None,
+               file_name=args.file_name,
                model_name=args.model,
                freeze_model=args.freeze_model,
                plot=args.plot,
