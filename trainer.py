@@ -45,11 +45,11 @@ class HybridSGDTrainer:
         self.scheduler = None
         if scheduler:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,
-                                                                        T_max=self.total_step_number * len(train_loader))
+                                                                        T_max=self.total_step_number)
         self.scheduler_warmup_steps = scheduler_warmup_steps
         self.warmup_scheduler = None
         if self.scheduler_warmup_steps > 0:
-            self.warmup_scheduler = warmup.LinearWarmup(self.optimizer, warmup_period=scheduler_warmup_steps * len(train_loader))
+            self.warmup_scheduler = warmup.LinearWarmup(self.optimizer, warmup_period=scheduler_warmup_steps)
         self.training_loss = None
         self.history = []
         self.steps = 0
@@ -83,7 +83,7 @@ class HybridSGDTrainer:
             total_loss += loss
         if self.warmup_scheduler is not None:
             with self.warmup_scheduler.dampening():
-                if self.scheduler is not None and self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps * len(self.train_loader):
+                if self.scheduler is not None and self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
                     self.scheduler.step()
         elif self.scheduler is not None:
             self.scheduler.step()
@@ -94,7 +94,7 @@ class HybridSGDTrainer:
         if self.size == 1:
             return self.train_solo()
 
-        for taken_steps in range(self.total_step_number + self.warmup_steps):
+        for taken_steps in range((self.total_step_number + self.warmup_steps) // len(self.train_loader) + 1):
             # step_loss = 0
             for (data, target) in self.train_loader:
 
@@ -114,7 +114,7 @@ class HybridSGDTrainer:
                     # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
                     self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     return self.history
-                if self.steps < self.warmup_steps * len(self.train_loader):
+                if self.steps < self.warmup_steps:
                     self.steps += 1
                     continue
 
@@ -150,6 +150,8 @@ class HybridSGDTrainer:
                 self.copy_to_model(self.partner_model)
                 self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.steps += 1
+                if self.steps == self.total_step_number + self.warmup_steps:
+                    return self.history
                 # print(f"Rank {self.rank} steps: {self.steps} after copy to model")
             # step_loss /= len(self.train_loader)
             # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
