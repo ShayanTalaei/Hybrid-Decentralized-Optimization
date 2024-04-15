@@ -125,8 +125,7 @@ class ZAD(Optimizer):
 
             for _ in range(self.random_vec):
                 v = [torch.randn(p.size()).to(self.device) for p in self.params_data]
-                if torch.isnan(torch.tensor(torch._foreach_norm(v))).any():
-                    print('Rank:', MPI.COMM_WORLD.Get_rank(), 'bad v')
+
                 # v_norm = torch._foreach_norm(v)
                 # torch._foreach_add_(v_norm, 1e-8)
                 # torch._foreach_div_(v, v_norm)
