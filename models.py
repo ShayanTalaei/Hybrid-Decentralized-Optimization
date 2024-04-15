@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 import torchvision.models as models
-from torchvision.models import ResNet101_Weights, ResNet50_Weights
+from torchvision.models import ResNet101_Weights, ResNet50_Weights, ResNet18_Weights
 
 from datasets import get_model_shape
 
@@ -153,8 +153,8 @@ class ResNetModel(EnhancedModel):
         :param kwargs: Additional arguments.
         """
         super().__init__(**kwargs)
-        self.weight = ResNet50_Weights.DEFAULT
-        self.model = models.resnet50(weights=self.weight)
+        self.weight = ResNet18_Weights.DEFAULT
+        self.model = models.resnet18(weights=self.weight)
         self.preprocess = self.weight.transforms()
         if freeze:
             for param in self.model.parameters():

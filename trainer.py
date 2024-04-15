@@ -115,6 +115,7 @@ class HybridSGDTrainer:
                     self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     return self.history
                 if self.steps < self.warmup_steps:
+                    self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     self.steps += 1
                     continue
 
