@@ -122,6 +122,7 @@ class ZAD(Optimizer):
             loss = criterion(functional_call(model, self.params_dict, data), target).item()
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), ' in opt loss:', loss)
             print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.max(torch.tensor(torch._foreach_norm(self.grad))))
+
             for _ in range(self.random_vec):
                 v = [torch.randn(p.size()).to(self.device) for p in self.params_data]
                 # v_norm = torch._foreach_norm(v)
@@ -130,9 +131,9 @@ class ZAD(Optimizer):
                 params_v = deepcopy(self.params_dict)
                 for p, v_ in zip(params_v.items(), v):
                     p[1].data += v_ * self.v_step
-                    torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / (self.random_vec * self.v_step))
-                    torch._foreach_add_(self.grad, v)
                 lossv = criterion(functional_call(model, params_v, data), target).item()
+                torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / (self.random_vec * self.v_step))
+                torch._foreach_add_(self.grad, v)
 
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.isnan(torch.tensor(torch._foreach_norm(self.grad))).any())
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
