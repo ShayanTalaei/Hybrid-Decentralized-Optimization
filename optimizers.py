@@ -134,6 +134,7 @@ class ZAD(Optimizer):
                 torch._foreach_add_(self.grad, v)
 
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.max(torch.tensor(torch._foreach_norm(self.grad))))
+            print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.isnan(torch.tensor(torch._foreach_norm(self.grad))).any())
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
             return loss
 
