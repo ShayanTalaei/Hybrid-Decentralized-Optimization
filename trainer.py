@@ -63,8 +63,8 @@ class HybridSGDTrainer:
         model_size = total_elements + buffer_size
 
         if self.size > 1:
-            self.model_copy = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
-            self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
+            self.model_copy = torch.zeros(model_size, dtype=torch.float64, device='cpu')
+            self.partner_model = torch.zeros(model_size, dtype=torch.float64, device='cpu')
             self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                       self.partner_model.nelement() * self.partner_model.element_size())
             buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
@@ -204,13 +204,13 @@ class HybridSGDTrainer:
         counter = 0
         for param in self.model.parameters():
             t = param.data
-            t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()]
+            t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()].to(t.device)
             counter += t.nelement()
 
     def model_to_copy(self, model_copy_tensor):
         counter = 0
         for param in self.model.parameters():
             t = param.data
-            model_copy_tensor[counter: counter + t.nelement()] = t.view(-1)
+            model_copy_tensor[counter: counter + t.nelement()] = t.view(-1).to(model_copy_tensor.device)
             counter += t.nelement()
 
