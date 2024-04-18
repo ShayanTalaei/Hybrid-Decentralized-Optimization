@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     mpi4py.rc.threads = False
+    os.environ['MPI4PY_RC_THREADS'] = '0'
 
     # Parse the arguments
     args = parser.parse_args()
