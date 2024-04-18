@@ -1,8 +1,9 @@
 matplotlib
 numpy
-pandas==1.5.3
 torch
-torchsummary==1.5.1
+torchsummary
 torchvision
-tqdm==4.65.0
+tqdm
+mpi4py
+pytorch_warmup
 mpi4py
