@@ -4,6 +4,7 @@ import argparse
 from utils import run
 import os
 import mpi4py
+from mpi4py import MPI
 
 if __name__ == "__main__":
     """Main function to run the script."""
@@ -45,8 +46,18 @@ if __name__ == "__main__":
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+    required = MPI.THREAD_MULTIPLE
+    provided = MPI.Init_thread(required)
+    print("Required:", MPI.Thread_support(required))
+    print("Provided:", MPI.Thread_support(provided))
+    MPI.Finalize()
     mpi4py.rc.threads = False
 
+    required = MPI.THREAD_MULTIPLE
+    provided = MPI.Init_thread(required)
+    print("Required:", MPI.Thread_support(required))
+    print("Provided:", MPI.Thread_support(provided))
+    MPI.Finalize()
     # Parse the arguments
     args = parser.parse_args()
     np.random.seed(args.seed)
