@@ -4,7 +4,6 @@ import argparse
 from utils import run
 import os
 import mpi4py
-from mpi4py import MPI
 
 if __name__ == "__main__":
     """Main function to run the script."""
@@ -45,12 +44,14 @@ if __name__ == "__main__":
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
 
+    mpi4py.MPI.Init()
+    mpi4py.rc.initialize = False
     mpi4py.rc.threads = False
     # MPI.Finalize()
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
-    required = MPI.THREAD_MULTIPLE
+    required = mpi4py.MPI.THREAD_MULTIPLE
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
-    required = MPI.THREAD_MULTIPLE
+    required = mpi4py.MPI.THREAD_MULTIPLE
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
 
     # Parse the arguments
