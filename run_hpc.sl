@@ -25,14 +25,16 @@
 #SBATCH --export=NONE
 unset SLURM_EXPORT_ENV
 
+
+cd $HOME/Jupyter/Hybrid-Decentralized-Optimization
+source ./venv/bin/activate
+
 module load openmpi/4.1.6
 module load python/3.10
 module load cuda/12.3.1
 module load cudnn/8.9.5.30
 
 
-cd $HOME/Jupyter/Hybrid-Decentralized-Optimization
-source ./venv/bin/activate
 
 
 #mpiexec --allow-run-as-root -n 2 python main.py --dataset cifar10 --lr0 0.001 --lr1 0.001 --plot --steps 200 --fn 1 --rv 50
