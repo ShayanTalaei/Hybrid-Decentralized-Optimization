@@ -53,11 +53,6 @@ if __name__ == "__main__":
     MPI.Finalize()
     mpi4py.rc.threads = False
 
-    required = MPI.THREAD_MULTIPLE
-    provided = MPI.Init_thread(required)
-    print("Required:", MPI.Thread_support(required))
-    print("Provided:", MPI.Thread_support(provided))
-    MPI.Finalize()
     # Parse the arguments
     args = parser.parse_args()
     np.random.seed(args.seed)
