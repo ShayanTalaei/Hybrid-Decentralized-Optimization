@@ -45,7 +45,6 @@ if __name__ == "__main__":
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
 
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
-    os.environ['MPI4PY_RC_THREADS'] = '0'
     mpi4py.rc.threads = False
 
     # Parse the arguments
