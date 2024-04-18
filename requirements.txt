@@ -5,4 +5,3 @@ torchsummary
 torchvision
 tqdm
 pytorch_warmup
-mpi4py

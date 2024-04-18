@@ -35,6 +35,4 @@ module load cuda/12.3.1
 module load cudnn/8.9.5.30
 
 
-
-
-#mpiexec --allow-run-as-root -n 2 python main.py --dataset cifar10 --lr0 0.001 --lr1 0.001 --plot --steps 200 --fn 1 --rv 50
+mpiexec --allow-run-as-root -n 2 python main.py --dataset cifar10 --lr0 0.001 --lr1 0.001 --plot --steps 200 --fn 1 --rv 50
