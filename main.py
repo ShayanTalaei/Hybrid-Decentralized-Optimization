@@ -48,8 +48,7 @@ if __name__ == "__main__":
     mpi4py.rc.threads = False
     # MPI.Finalize()
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
-    required = mpi4py.MPI.THREAD_MULTIPLE
-    print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
+
     required = mpi4py.MPI.THREAD_MULTIPLE
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
 
