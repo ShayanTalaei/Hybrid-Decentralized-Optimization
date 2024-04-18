@@ -57,6 +57,7 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Convert string arguments to appropriate data types
+    print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'size:', mpi4py.MPI.COMM_WORLD.Get_size())
     if mpi4py.MPI.COMM_WORLD.Get_rank() == 0:
         print(f"Learning rates: Zero-order: {args.lr0}, First-order: {args.lr1}")
         print(f"Steps: {args.steps}")
