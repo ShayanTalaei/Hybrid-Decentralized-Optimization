@@ -69,7 +69,9 @@ class HybridSGDTrainer:
                                                       self.partner_model.nelement() * self.partner_model.element_size())
             buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
                                          self.model_copy.nelement() * self.model_copy.element_size())
+            self.comm.Barrier()
             self.win = MPI.Win.Create(buf, comm=self.comm)
+            self.comm.Barrier()
 
     def take_step(self, data, target):
         steps = 1
