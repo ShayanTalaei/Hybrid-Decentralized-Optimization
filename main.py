@@ -44,7 +44,6 @@ if __name__ == "__main__":
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
 
-    mpi4py.MPI.Init()
     mpi4py.rc.initialize = False
     mpi4py.rc.threads = False
     # MPI.Finalize()
