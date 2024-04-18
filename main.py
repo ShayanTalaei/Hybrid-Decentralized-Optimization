@@ -49,6 +49,8 @@ if __name__ == "__main__":
     required = MPI.THREAD_MULTIPLE
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
     mpi4py.rc.threads = False
+    provided = MPI.Init_thread(required)
+    MPI.Finalize()
     required = MPI.THREAD_MULTIPLE
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
 
