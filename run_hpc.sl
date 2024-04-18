@@ -35,6 +35,6 @@ module load cuda/12.3.1
 module load cudnn/8.9.5.30
 
 
-mpiexec --with-cuda --oversubscribe --allow-run-as-root -np 2 python main.py --z_batch_size 500 --f_batch_size 100 --dataset mnist --lr0 0.05 --lr1 0.1\
+mpiexec --oversubscribe --allow-run-as-root -np 2 python main.py --z_batch_size 500 --f_batch_size 100 --dataset mnist --lr0 0.05 --lr1 0.1\
  --plot --steps 200 --fn 2 --rv 100 --model cnn --momentum 0.9 --z_grad zeroth_order_rge --warmup_steps 0 --file_name zo\
   --scheduler --scheduler_warmup_steps 0 --v_step 0.005 --log_period 10 --conv_number 3 --hidden 128 --out_channels 32 --num_layer 3
