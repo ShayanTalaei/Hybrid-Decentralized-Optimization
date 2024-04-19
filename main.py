@@ -49,7 +49,7 @@ if __name__ == "__main__":
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
     required = mpi4py.MPI.THREAD_MULTIPLE
-    memory = torch.zeros((1, 1))
+    memory = torch.empty((1, 1))
     buf = mpi4py.MPI.memory.fromaddress(memory.data_ptr(), memory.numel() * memory.element_size())
     mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
 
