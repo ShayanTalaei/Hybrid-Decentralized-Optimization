@@ -49,6 +49,7 @@ if __name__ == "__main__":
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
     required = mpi4py.MPI.THREAD_MULTIPLE
+    mpi4py.MPI.Win.Create(0, comm=mpi4py.MPI.COMM_WORLD)
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
 
     # Parse the arguments
