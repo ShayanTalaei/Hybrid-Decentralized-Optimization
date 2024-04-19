@@ -67,7 +67,7 @@ class HybridSGDTrainer:
             self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
             self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                       self.partner_model.nelement() * self.partner_model.element_size())
-            print('Rank:', self.rank, 'Model size:', model_size, self.partner_model.size(), self.partner_model.nelement() * self.partner_model.element_size())
+            print('Rank:', self.rank, 'Model size:', model_size, self.model_copy.size(), self.model_copy.nelement() * self.model_copy.element_size())
             buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
                                          self.model_copy.nelement() * self.model_copy.element_size())
             print(buf, self.rank, self.size)
