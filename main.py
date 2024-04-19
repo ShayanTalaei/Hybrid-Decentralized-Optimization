@@ -59,7 +59,7 @@ if __name__ == "__main__":
     itemsize = datatype.Get_size()
     N = 10
     rank = mpi4py.MPI.COMM_WORLD.Get_rank()
-    win_size = N * itemsize if rank == 0 else 0
+    win_size = N * itemsize
     win = MPI.Win.Allocate(win_size, comm=mpi4py.MPI.COMM_WORLD)
 
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
