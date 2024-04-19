@@ -58,8 +58,9 @@ if __name__ == "__main__":
     np_dtype = dtlib.to_numpy_dtype(datatype)
     itemsize = datatype.Get_size()
     N = 10
+    rank = mpi4py.MPI.COMM_WORLD.Get_rank()
     win_size = N * itemsize if rank == 0 else 0
-    win = MPI.Win.Allocate(win_size, comm=comm)
+    win = MPI.Win.Allocate(win_size, comm=mpi4py.MPI.COMM_WORLD)
 
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
 
