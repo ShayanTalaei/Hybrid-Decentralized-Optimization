@@ -4,6 +4,8 @@ import argparse
 from utils import run
 import os
 import mpi4py
+from mpi4py.util import dtlib
+from mpi4py import MPI
 
 if __name__ == "__main__":
     """Main function to run the script."""
@@ -52,8 +54,13 @@ if __name__ == "__main__":
     # memory = torch.empty((1, 1))
     # buf = mpi4py.MPI.memory.fromaddress(memory.data_ptr(), memory.numel() * memory.element_size())
     # mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
-    memory = mpi4py.MPI.Alloc_mem(1024)  # Allocate memory for MPI window
-    win = mpi4py.MPI.Win.Create(memory, 1, mpi4py.MPI.INFO_NULL, mpi4py.MPI.COMM_WORLD)
+    datatype = MPI.FLOAT
+    np_dtype = dtlib.to_numpy_dtype(datatype)
+    itemsize = datatype.Get_size()
+    N = 10
+    win_size = N * itemsize if rank == 0 else 0
+    win = MPI.Win.Allocate(win_size, comm=comm)
+
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
 
     # Parse the arguments
