@@ -48,16 +48,44 @@ if __name__ == "__main__":
 
     # mpi4py.rc.threads = False
     # MPI.Finalize()
-    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+    # os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
-    required = mpi4py.MPI.THREAD_MULTIPLE
-    data = np.zeros(10, dtype='i')  # Integer array of size 10
-    win = MPI.Win.Create(data, disp_unit=data.itemsize, comm=MPI.COMM_WORLD)
+    # required = mpi4py.MPI.THREAD_MULTIPLE
+    # data = np.zeros(10, dtype='i')  # Integer array of size 10
+    # win = MPI.Win.Create(data, disp_unit=data.itemsize, comm=MPI.COMM_WORLD)
     # memory = torch.ones((1, 1))
     # buf = mpi4py.MPI.memory.fromaddress(memory.data_ptr(), memory.numel() * memory.element_size())
     # mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
 
-    print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
+    # print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
+    import numpy as np
+    from mpi4py import MPI
+    from mpi4py.util import dtlib
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
+    datatype = MPI.FLOAT
+    np_dtype = dtlib.to_numpy_dtype(datatype)
+    itemsize = datatype.Get_size()
+
+    N = 10
+    win_size = N * itemsize if rank == 0 else 0
+    win = MPI.Win.Allocate(win_size, comm=comm)
+
+    buf = np.empty(N, dtype=np_dtype)
+    if rank == 0:
+        buf.fill(42)
+        win.Lock(rank=0)
+        win.Put(buf, target_rank=0)
+        win.Unlock(rank=0)
+        comm.Barrier()
+    else:
+        comm.Barrier()
+        win.Lock(rank=0)
+        win.Get(buf, target_rank=0)
+        win.Unlock(rank=0)
+        assert np.all(buf == 42)
 
     # Parse the arguments
     args = parser.parse_args()
