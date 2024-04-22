@@ -51,16 +51,9 @@ if __name__ == "__main__":
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
     required = mpi4py.MPI.THREAD_MULTIPLE
-    # memory = torch.empty((1, 1))
-    # buf = mpi4py.MPI.memory.fromaddress(memory.data_ptr(), memory.numel() * memory.element_size())
-    # mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
-    datatype = MPI.FLOAT
-    np_dtype = dtlib.to_numpy_dtype(datatype)
-    itemsize = datatype.Get_size()
-    N = 10
-    rank = mpi4py.MPI.COMM_WORLD.Get_rank()
-    win_size = N * itemsize
-    win = MPI.Win.Allocate(win_size, comm=mpi4py.MPI.COMM_WORLD)
+    memory = torch.empty((1, 1))
+    buf = mpi4py.MPI.memory.fromaddress(memory.data_ptr(), memory.numel() * memory.element_size())
+    mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
 
     print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
 
