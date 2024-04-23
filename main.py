@@ -52,7 +52,10 @@ if __name__ == "__main__":
 
     # required = mpi4py.MPI.THREAD_MULTIPLE
     data = np.zeros(10, dtype='i')  # Integer array of size 10
-    win = MPI.Win.Create(data, disp_unit=data.itemsize, comm=MPI.COMM_WORLD)
+    # win = MPI.Win.Create(data, disp_unit=data.itemsize, comm=MPI.COMM_WORLD)
+    buf = MPI.memory.fromaddress(data.data_ptr(),
+                                 data.nelement() * data.element_size())
+    MPI.Win.Create(buf, comm=MPI.COMM_WORLD)
     # memory = torch.ones((1, 1))
     # buf = mpi4py.MPI.memory.fromaddress(memory.data_ptr(), memory.numel() * memory.element_size())
     # mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
