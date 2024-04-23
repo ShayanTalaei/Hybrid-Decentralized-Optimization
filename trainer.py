@@ -67,12 +67,12 @@ class HybridSGDTrainer:
             self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
             self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                       self.partner_model.nelement() * self.partner_model.element_size())
-            print('Rank:', self.rank, 'Model size:', model_size, self.model_copy.size(), self.model_copy.nelement() * self.model_copy.element_size())
-            buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
-                                         self.model_copy.nelement() * self.model_copy.element_size())
-            print(buf, self.rank, self.size)
+            # print('Rank:', self.rank, 'Model size:', model_size, self.model_copy.size(), self.model_copy.nelement() * self.model_copy.element_size())
+            self.buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
+                                              self.model_copy.nelement() * self.model_copy.element_size())
             self.comm.Barrier()
-            self.win = MPI.Win.Create(buf, comm=self.comm)
+            # self.win = MPI.Win.Create(buf, comm=self.comm)
+            self.win = MPI.Win.Allocate(self.model_copy.nelement() * self.model_copy.element_size(), comm=self.comm)
             self.comm.Barrier()
 
     def take_step(self, data, target):
@@ -131,6 +131,7 @@ class HybridSGDTrainer:
                 # print(f"Rank {self.rank} steps: {self.steps} after lock")
 
                 self.model_to_copy(self.model_copy)
+                self.win.Put(self.buf, target_rank=self.rank)
                 # print(f"Rank {self.rank} steps: {self.steps} after model to copy")
 
                 self.win.Unlock(self.rank)

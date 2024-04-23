@@ -61,38 +61,38 @@ if __name__ == "__main__":
     # mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
 
     # print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
-    import numpy as np
-    from mpi4py import MPI
-    from mpi4py.util import dtlib
-
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-
-    # datatype = MPI.FLOAT
-    # np_dtype = dtlib.to_numpy_dtype(datatype)
-    # itemsize = datatype.Get_size()
-
-    # N = 10
-    # win_size = N * itemsize if rank == 0 else 0
-    data = torch.zeros(10, dtype=torch.float64)  # Integer array of size 10
-    buf = MPI.memory.fromaddress(data.data_ptr(),
-                                 data.nelement() * data.element_size())
-    win = MPI.Win.Allocate(data.nelement() * data.element_size(), comm=comm)
-
-    # buf = np.empty(N, dtype=np_dtype)
-    if rank == 0:
-        # buf.fill(42)
-        win.Lock(rank=0)
-        win.Put(buf, target_rank=0)
-        win.Unlock(rank=0)
-        comm.Barrier()
-    else:
-        comm.Barrier()
-        win.Lock(rank=0)
-        win.Get(buf, target_rank=0)
-        win.Unlock(rank=0)
-        print('rank:', rank, 'buf:', buf)
-        # assert np.all(buf == 42)
+    # import numpy as np
+    # from mpi4py import MPI
+    # from mpi4py.util import dtlib
+    #
+    # comm = MPI.COMM_WORLD
+    # rank = comm.Get_rank()
+    #
+    # # datatype = MPI.FLOAT
+    # # np_dtype = dtlib.to_numpy_dtype(datatype)
+    # # itemsize = datatype.Get_size()
+    #
+    # # N = 10
+    # # win_size = N * itemsize if rank == 0 else 0
+    # data = torch.zeros(10, dtype=torch.float64)  # Integer array of size 10
+    # buf = MPI.memory.fromaddress(data.data_ptr(),
+    #                              data.nelement() * data.element_size())
+    # win = MPI.Win.Allocate(data.nelement() * data.element_size(), comm=comm)
+    #
+    # # buf = np.empty(N, dtype=np_dtype)
+    # if rank == 0:
+    #     # buf.fill(42)
+    #     win.Lock(rank=0)
+    #     win.Put(buf, target_rank=0)
+    #     win.Unlock(rank=0)
+    #     comm.Barrier()
+    # else:
+    #     comm.Barrier()
+    #     win.Lock(rank=0)
+    #     win.Get(buf, target_rank=0)
+    #     win.Unlock(rank=0)
+    #     print('rank:', rank, 'buf:', buf)
+    #     # assert np.all(buf == 42)
 
     # Parse the arguments
     args = parser.parse_args()
