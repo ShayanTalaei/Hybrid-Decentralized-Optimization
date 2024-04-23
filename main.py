@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
     # required = mpi4py.MPI.THREAD_MULTIPLE
-    data = np.zeros(10, dtype='i')  # Integer array of size 10
+    data = torch.zeros(10, dtype='i')  # Integer array of size 10
     # win = MPI.Win.Create(data, disp_unit=data.itemsize, comm=MPI.COMM_WORLD)
     buf = MPI.memory.fromaddress(data.data_ptr(),
                                  data.nelement() * data.element_size())
