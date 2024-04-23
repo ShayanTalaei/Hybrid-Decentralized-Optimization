@@ -97,9 +97,9 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             end_time = time.time()
             trainer.win.Free()
 
-            for key in history[0].keys():
-                results[key] = [x[key] for x in history]
             if rank == 0:
+                for key in history[0].keys():
+                    results[key] = [x[key] for x in history]
                 print("Running time: {:.4f}".format(float(end_time - start_time)))
             del trainer
             torch.cuda.empty_cache()
@@ -112,6 +112,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
         sys.exit()
 
     if file_name:
+        os.makedirs(f'{path}/results/{dataset_name}', exist_ok=True)
         torch.save(results, path + f"results/{dataset_name}/{file_name}_rank_{rank}_size_{size}_fn_{fn}_warmup_{warmup_steps}_steps_{steps}")
     # if rank == 0 and plot:
     #     name = 'test'

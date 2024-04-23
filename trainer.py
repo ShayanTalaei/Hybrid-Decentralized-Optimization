@@ -200,8 +200,8 @@ class HybridSGDTrainer:
                     validation_loss,
                     validation_accuracy)
         )
-        result_dict = {'Steps': int(self.steps), 'Training loss': float(training_loss),
-                       'Validation loss': float(validation_loss), 'Validation accuracy': float(validation_accuracy)}
+        result_dict = {'steps': int(self.steps), 'training_loss': float(training_loss),
+                       'validation_loss': float(validation_loss), 'validation_accuracy': float(validation_accuracy)}
         self.history.append(result_dict)
         self.model.train()
 
