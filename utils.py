@@ -4,6 +4,7 @@ import time
 import os
 from mpi4py import MPI
 import gc
+import pickle
 
 import torch
 import matplotlib.pyplot as plt
@@ -113,7 +114,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
 
     if file_name:
         os.makedirs(f'{path}/results/{dataset_name}', exist_ok=True)
-        torch.save(results, path + f"results/{dataset_name}/{file_name}_rank_{rank}_size_{size}_fn_{fn}_warmup_{warmup_steps}_steps_{steps}.pth")
+        with open(f'{path}/results/{dataset_name}/{file_name}_rank_{rank}_size_{size}_fn_{fn}_warmup_{warmup_steps}_steps_{steps}.pkl', 'wb') as file:
+            pickle.dump(results, file)
     # if rank == 0 and plot:
     #     name = 'test'
     #     os.makedirs(f'{path}/results/{dataset_name}', exist_ok=True)
