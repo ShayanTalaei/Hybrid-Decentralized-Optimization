@@ -14,7 +14,7 @@ class HybridSGDTrainer:
     def __init__(self, rank, size, comm, fn, grad_mode, dataset_name, train_loader, test_loader, initial_state_dict,
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
                  momentum=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
-                 log_period=10, v_step=10.0, out_channels=8):
+                 log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
@@ -23,6 +23,7 @@ class HybridSGDTrainer:
         self.lr = lr
         self.total_step_number = total_step_number
         self.log_period = log_period
+        self.is_cuda_aware = is_cuda_aware
         self.warmup_steps = warmup_steps
         self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
@@ -63,8 +64,12 @@ class HybridSGDTrainer:
         model_size = total_elements + buffer_size
 
         if self.size > 1:
-            self.model_copy = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
-            self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
+            if self.is_cuda_aware:
+                self.model_copy = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
+                self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
+            else:
+                self.model_copy = torch.zeros(model_size, dtype=torch.float64, device="cpu")
+                self.partner_model = torch.zeros(model_size, dtype=torch.float64, device="cpu")
             self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
                                                       self.partner_model.nelement() * self.partner_model.element_size())
             # print('Rank:', self.rank, 'Model size:', model_size, self.model_copy.size(), self.model_copy.nelement() * self.model_copy.element_size())
@@ -207,15 +212,27 @@ class HybridSGDTrainer:
 
     def copy_to_model(self, model_copy_tensor):
         counter = 0
-        for param in self.model.parameters():
-            t = param.data
-            t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()]
-            counter += t.nelement()
+        if not self.is_cuda_aware:
+            for param in self.model.parameters():
+                t = param.data
+                t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()].to(t.device)
+                counter += t.nelement()
+        else:
+            for param in self.model.parameters():
+                t = param.data
+                t.view(-1)[:] = model_copy_tensor[counter: counter + t.nelement()]
+                counter += t.nelement()
 
     def model_to_copy(self, model_copy_tensor):
         counter = 0
-        for param in self.model.parameters():
-            t = param.data
-            model_copy_tensor[counter: counter + t.nelement()] = t.view(-1)
-            counter += t.nelement()
+        if not self.is_cuda_aware:
+            for param in self.model.parameters():
+                t = param.data
+                model_copy_tensor[counter: counter + t.nelement()] = t.view(-1).to(model_copy_tensor.device)
+                counter += t.nelement()
+        else:
+            for param in self.model.parameters():
+                t = param.data
+                model_copy_tensor[counter: counter + t.nelement()] = t.view(-1)
+                counter += t.nelement()
 
