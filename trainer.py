@@ -174,7 +174,7 @@ class HybridSGDTrainer:
 
     def train_solo(self):
         assert self.size == 1
-        for step in range(self.total_step_number):
+        for taken_steps in range((self.total_step_number + self.warmup_steps) // len(self.train_loader) + 1):
             # step_loss = 0
             for (data, target) in self.train_loader:
                 if self.steps % self.log_period == 0:
