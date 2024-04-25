@@ -49,7 +49,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
         file_name=None, model_name=None, freeze_model=False, plot=False, random_vecs=200,
         num_workers=2, momentum=0.0, f_grad='first_order', z_grad='zeroth_order_cge', scheduler=False,
         scheduler_warmup_steps=0, warmup_steps=0, v_step=10.0, out_channels=8, f_batch_size=100, z_batch_size=100,
-        is_cuda_aware=False):
+        is_cuda_aware=False, device='cpu'):
     results = {}
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -74,7 +74,9 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             if rank == 0:
                 initial_state_dict = get_temp_state_dict(input_shape, n_class, conv_number=conv_number,
                                                          hidden=hidden, num_layer=num_layer, model_name=model_name,
-                                                         freeze_model=freeze_model, out_channels=out_channels)
+                                                         freeze_model=freeze_model, out_channels=out_channels,
+                                                         device=device
+                                                         )
             if size > 1:
                 comm.barrier()
                 initial_state_dict = comm.bcast(initial_state_dict, root=0)
@@ -89,7 +91,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                        scheduler_warmup_steps=scheduler_warmup_steps, warmup_steps=warmup_steps,
                                        total_step_number=steps, log_period=log_period,
                                        v_step=v_step, out_channels=out_channels,
-                                        is_cuda_aware=is_cuda_aware
+                                       is_cuda_aware=is_cuda_aware, device=device
                                        )
             if rank == 0:
                 print(f"\n--- Run number: {run_number}")

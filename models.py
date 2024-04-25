@@ -8,13 +8,13 @@ from datasets import get_model_shape
 
 
 def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_layer=2, model_name=None,
-                        freeze_model=False, out_channels=8):
+                        freeze_model=False, out_channels=8, device='cpu'):
     hidden_layers = [hidden] * num_layer
     hidden_layers.append(n_class)
     if model_name == 'resnet':
-        model = ResNetModel(n_class, freeze=freeze_model)
+        model = ResNetModel(n_class, freeze=freeze_model, device=device)
     else:
-        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels)
+        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, device=device)
     state_dict = model.state_dict()
     return state_dict
 
@@ -27,7 +27,7 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
     if kwargs['model_name'] == 'resnet':
         model = ResNetModel(n_class, freeze=kwargs['freeze_model'], **kwargs)
     else:
-        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels)
+        model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, **kwargs)
 
     return model
 
@@ -37,7 +37,7 @@ class EnhancedModel(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
         self.acc_def = "class number"
-        device_name = kwargs.get("device name", 'cuda:0' if torch.cuda.is_available() else 'cpu')
+        device_name = kwargs.get("device", 'cuda:0' if torch.cuda.is_available() else 'cpu')
         self.device = torch.device(device_name)
         self.to(self.device)
 
