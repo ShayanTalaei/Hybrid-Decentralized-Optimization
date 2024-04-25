@@ -96,11 +96,13 @@ if __name__ == "__main__":
     #     # assert np.all(buf == 42)
 
     # Parse the arguments
+    rank = mpi4py.MPI.COMM_WORLD.Get_rank()
+    comm = MPI.COMM_WORLD
+    print('start rank:', rank)
+    comm.Barrier()
     args = parser.parse_args()
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    rank = mpi4py.MPI.COMM_WORLD.Get_rank()
-    comm = MPI.COMM_WORLD
 
     # Check if CUDA is available and set the device accordingly
     device = 'cpu'
