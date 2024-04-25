@@ -105,8 +105,10 @@ if __name__ == "__main__":
     # Check if CUDA is available and set the device accordingly
     device = 'cpu'
     if torch.cuda.is_available():
-        gpu_count = torch.cuda.device_count()
-        device = f'cuda:{rank % gpu_count}'
+        # gpu_count = torch.cuda.device_count()
+        # device = f'cuda:{rank % gpu_count}'
+        gpu_list = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+        device = gpu_list[rank % len(gpu_list)]
 
     # Convert string arguments to appropriate data types
     print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size(), 'device:', device)
