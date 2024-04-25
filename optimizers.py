@@ -113,7 +113,7 @@ class ZAD(Optimizer):
                 torch._foreach_add_(self.grad, v)
                 total_loss += loss.item()
             if MPI.COMM_WORLD.Get_rank() == 0:
-                print('max norm:', torch.max(torch.tensor(torch._foreach_norm(self.grad)))
+                print('max norm:', torch.max(torch.tensor(torch._foreach_norm(self.grad))))
             torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
             # print('Rank:', MPI.COMM_WORLD.Get_rank(), 'end')
             return total_loss / self.random_vec
