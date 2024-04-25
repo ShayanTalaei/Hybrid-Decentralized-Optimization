@@ -100,6 +100,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     rank = mpi4py.MPI.COMM_WORLD.Get_rank()
+    comm = MPI.COMM_WORLD
 
     # Check if CUDA is available and set the device accordingly
     device = 'cpu'
@@ -108,7 +109,8 @@ if __name__ == "__main__":
         device = f'cuda:{rank % gpu_count}'
 
     # Convert string arguments to appropriate data types
-    print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size())
+    print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size(), 'device:', device)
+    comm.Barrier()
     if rank == 0:
         print(f"Learning rates: Zero-order: {args.lr0}, First-order: {args.lr1}")
         print(f"Steps: {args.steps}")
@@ -136,7 +138,6 @@ if __name__ == "__main__":
         print(f"File name: {args.file_name}")
         print(f"Path: {args.path}")
         print(f"Is CUDA aware: {args.mpi_cuda_aware}")
-        print(f"Using {device}")
 
     # Run the training script
 
