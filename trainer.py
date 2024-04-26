@@ -152,8 +152,11 @@ class HybridSGDTrainer:
 
                     if self.size % 2 == 1:
                         pairs[per[-1]] = -1
-
-                self.comm.Bcast(pairs, root=0)
+                    self.comm.Bcast(pairs, root=0)
+                    self.comm.Barrier()
+                else:
+                    self.comm.Barrier()
+                    self.comm.Bcast(pairs, root=0)
                 # partner_rank = np.random.randint(self.size)
                 # while partner_rank == self.rank:
                 #     partner_rank = np.random.randint(self.size)
