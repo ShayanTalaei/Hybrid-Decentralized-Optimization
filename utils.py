@@ -100,7 +100,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             history = trainer.train()
             comm.Barrier()
             end_time = time.time()
-            trainer.win.Free()
+            if size > 1:
+                trainer.win.Free()
 
             if rank == 0:
                 for key in history[0].keys():
