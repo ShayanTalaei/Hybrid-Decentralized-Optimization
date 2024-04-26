@@ -162,7 +162,7 @@ class HybridSGDTrainer:
                 #     partner_rank = np.random.randint(self.size)
                 partner_rank = pairs[self.rank]
                 # print(f"Rank {self.rank} steps: {self.steps} before lock partner")
-                print(f"Rank {self.rank} steps: {self.steps} partner rank: {partner_rank}")
+                # print(f"Rank {self.rank} steps: {self.steps} partner rank: {partner_rank}")
                 if partner_rank != -1:
                     self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
                     # print(f"Rank {self.rank} steps: {self.steps} after lock partner")
