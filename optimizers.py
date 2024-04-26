@@ -171,11 +171,12 @@ class ZAD(Optimizer):
                 actual_grad = [param.grad if param.grad is not None else torch.zeros(param.size()).to(self.device) for param in self.params]
                 for _ in range(self.random_vec):
                     v = [torch.randn(p.size()).to(self.device) for p in self.params_data]
-                    efficiency = [t.sum() for t in torch._foreach_mul(v, actual_grad)]
-
-                    torch._foreach_addcmul_(v, actual_grad, efficiency)
+                    # efficiency = [t.sum() for t in torch._foreach_mul(v, actual_grad)]
+                    # torch._foreach_addcmul_(v, actual_grad, efficiency)
+                    torch._foreach_mul_(v, actual_grad)
+                    efficiency = [t.sum() for t in v]
                     torch._foreach_mul_(v, (1 - self.momentum) / self.random_vec)
-                    torch._foreach_add_(self.grad, v)
+                    torch._foreach_addcmul_(self.grad, v, efficiency)
                 torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
                     # grad = torch.cat([gr.flatten() for gr in actual_grad], 0)
                     #
