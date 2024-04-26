@@ -89,7 +89,7 @@ if __name__ == "__main__":
     #     comm.Barrier()
     # else:
     #     comm.Barrier()
-    #     win.Lock(rank=0)
+    #     win.Lock(rfank=0)
     #     win.Get(buf, target_rank=0)
     #     win.Unlock(rank=0)
     #     print('rank:', rank, 'buf:', buf)

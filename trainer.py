@@ -143,25 +143,37 @@ class HybridSGDTrainer:
                 self.win.Unlock(self.rank)
                 # print(f"Rank {self.rank} steps: {self.steps} after unlock")
 
-                partner_rank = np.random.randint(self.size)
-                while partner_rank == self.rank:
-                    partner_rank = np.random.randint(self.size)
+                pairs = np.empty(self.size, dtype=np.int32)
+                if self.rank == 0:
+                    per = np.random.permutation(self.size)
+                    for i in range(0, self.size, 2):
+                        pairs[per[i]] = per[i + 1]
+                        pairs[per[i + 1]] = per[i]
 
+                    if self.size % 2 == 1:
+                        pairs[per[-1]] = -1
+
+                self.comm.Bcast(pairs, root=0)
+                # partner_rank = np.random.randint(self.size)
+                # while partner_rank == self.rank:
+                #     partner_rank = np.random.randint(self.size)
+                partner_rank = pairs[self.rank]
                 # print(f"Rank {self.rank} steps: {self.steps} before lock partner")
+                print(f"Rank {self.rank} steps: {self.steps} partner rank: {partner_rank}")
+                if partner_rank != -1:
+                    self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
+                    # print(f"Rank {self.rank} steps: {self.steps} after lock partner")
 
-                self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
-                # print(f"Rank {self.rank} steps: {self.steps} after lock partner")
+                    self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
 
-                self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
+                    # print(f"Rank {self.rank} steps: {self.steps} after get")
 
-                # print(f"Rank {self.rank} steps: {self.steps} after get")
+                    self.win.Unlock(partner_rank)
+                    # print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
 
-                self.win.Unlock(partner_rank)
-                # print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
+                    self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
 
-                self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
-
-                self.copy_to_model(self.partner_model)
+                    self.copy_to_model(self.partner_model)
                 # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.training_loss = loss
                 self.steps += 1
