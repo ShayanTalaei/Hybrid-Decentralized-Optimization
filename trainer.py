@@ -146,7 +146,7 @@ class HybridSGDTrainer:
                 pairs = np.empty(self.size, dtype=np.int32)
                 if self.rank == 0:
                     per = np.random.permutation(self.size)
-                    for i in range(0, self.size, 2):
+                    for i in range(0, self.size-1, 2):
                         pairs[per[i]] = per[i + 1]
                         pairs[per[i + 1]] = per[i]
 
