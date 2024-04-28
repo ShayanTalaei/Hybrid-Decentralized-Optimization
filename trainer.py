@@ -122,12 +122,12 @@ class HybridSGDTrainer:
                 if loss > 10 ** 4:  # Diverged!
                     # step_loss /= len(self.train_loader)
                     # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
-                    # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
-                    self.training_loss = loss
+                    self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+                    # self.training_loss = loss
                     return self.history
                 if self.steps < self.warmup_steps:
-                    # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
-                    self.training_loss = loss
+                    self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+                    # self.training_loss = loss
                     self.steps += 1
                     continue
 
@@ -177,8 +177,8 @@ class HybridSGDTrainer:
                     self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
 
                     self.copy_to_model(self.partner_model)
-                # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
-                self.training_loss = loss
+                self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+                # self.training_loss = loss
                 self.steps += 1
                 if self.steps == self.total_step_number + self.warmup_steps:
                     return self.history
@@ -197,12 +197,11 @@ class HybridSGDTrainer:
                     self.evaluate()
                 loss = self.take_step(data, target)
                 # step_loss += loss
+                self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 if loss > 10 ** 4:  # Diverged!
                     # step_loss /= len(self.train_loader)
                     # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
-                    self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     return self.history
-                self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.steps += 1
                 if self.steps == self.total_step_number + self.warmup_steps:
                     return self.history
