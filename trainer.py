@@ -88,7 +88,13 @@ class HybridSGDTrainer:
         while taken_steps < steps:
             # print("Rank: ", self.rank, 'optimize')
             data, target = data.to(self.model.device), target.to(self.model.device)
-            loss = self.optimizer.optimize(self.model, data, target, self.criterion)
+            while True:
+                try:
+                    loss = self.optimizer.optimize(self.model, data, target, self.criterion)
+                    break
+                except Exception as e:
+                    print("Rank: ", self.rank, e)
+                    print("Rank: ", self.rank, "Retrying...")
             taken_steps += 1
             total_loss += loss
         if self.warmup_scheduler is not None:
