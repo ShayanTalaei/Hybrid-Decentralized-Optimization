@@ -39,10 +39,10 @@ class ZAD(Optimizer):
     name = 'ZAD'
 
     def __init__(self, params, lr=0.001, random_vec=10, momentum=0.9, names=None, grad_mode='zeroth_order_rge',
-                 v_step=10.0, device='cpu'):
+                 v_step=10.0, device='cpu', weight_decay=0.0):
         self.device = device
         defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode,
-                        v_step=v_step)
+                        v_step=v_step, weight_decay=weight_decay)
         super(ZAD, self).__init__(params, defaults)
         self.lr = lr
         self.random_vec = random_vec
@@ -50,6 +50,7 @@ class ZAD(Optimizer):
         self.momentum = momentum
         self.grad = [torch.zeros(p.size()).to(self.device) for group in self.param_groups for p in group['params']]
         self.params = [p for group in self.param_groups for p in group['params']]
+        self.weight_decays = [weight_decay if 'weight_decay' not in group else group['weight_decay'] for group in self.param_groups for p in group['params']]
         self.params_data = [p.data for p in self.params]
         self.names = names
         assert grad_mode in ['zeroth_order_rge', 'zeroth_order_forward-mode_AD', 'zeroth_order_cge', 'zeroth_order_forward-mode_AD_sim']
@@ -139,6 +140,11 @@ class ZAD(Optimizer):
                     lossv = criterion(functional_call(model, params_v, data), target).item()
                     torch._foreach_mul_(v, (1 - self.momentum) * (lossv - loss) / (self.random_vec * self.v_step))
                     torch._foreach_add_(self.grad, v)
+                # weight decay
+                norms = torch._foreach_norm(self.params_data)
+                torch._foreach_mul_(norms, self.weight_decays)
+                torch._foreach_mul_(norms, 2)
+                torch._foreach_add_(self.grad, norms)
 
                 # print('Rank:', MPI.COMM_WORLD.Get_rank(), torch.isnan(torch.tensor(torch._foreach_norm(self.grad))).any())
                 torch._foreach_add_(self.params_data, torch._foreach_mul(self.grad, -self.lr))
@@ -165,6 +171,11 @@ class ZAD(Optimizer):
         elif self.grad_mode == 'zeroth_order_forward-mode_AD_sim':
             self.zero_grad()
             loss = criterion(model(data), target)
+            # weight decay
+            norms = torch._foreach_norm(self.params_data)
+            torch._forech_pow_(norms, 2)
+            torch._foreach_mul_(norms, self.weight_decays)
+            loss += torch.sum(norms)
             loss.backward()
             with torch.no_grad():
                 torch._foreach_mul_(self.grad, self.momentum)

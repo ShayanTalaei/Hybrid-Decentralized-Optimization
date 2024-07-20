@@ -1,12 +1,13 @@
 import numpy as np
 import torch
+import wandb
 
 import optimizers
 from models import get_model
 from mpi4py import MPI
 import pytorch_warmup as warmup
 
-from datasets import get_criterion
+from datasets.datasets import get_criterion
 
 
 class HybridSGDTrainer:
@@ -14,7 +15,7 @@ class HybridSGDTrainer:
     def __init__(self, rank, size, comm, fn, grad_mode, dataset_name, train_loader, test_loader, initial_state_dict,
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
                  momentum=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
-                 log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu'):
+                 log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu', config=None):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
@@ -27,7 +28,7 @@ class HybridSGDTrainer:
         self.warmup_steps = warmup_steps
         self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
-                               out_channels=out_channels, device=device)
+                               out_channels=out_channels, device=device, config=config)
 
         self.model.load_state_dict(initial_state_dict)
         self.test_loader = test_loader
@@ -36,14 +37,18 @@ class HybridSGDTrainer:
         self.grad_mode = grad_mode
         self.criterion = get_criterion(dataset_name)
         grad_mode_to_opt = {'first_order': 'SGD', 'zeroth_order_forward-mode_AD': 'ZAD', 'zeroth_order_rge': 'ZAD', 'zeroth_order_cge': 'ZAD', 'zeroth_order_forward-mode_AD_sim': 'ZAD'}
-        opt_args = {'lr': lr, 'momentum': momentum}
+        opt_args = {'lr': lr, 'momentum': momentum, 'weight_decay': config['weight_decay']}
         if self.grad_mode.startswith('zeroth_order'):
             opt_args['random_vec'] = random_vecs
             opt_args['names'] = list(n for n, _ in self.model.named_parameters())
             opt_args['grad_mode'] = grad_mode
             opt_args['v_step'] = v_step
             opt_args['device'] = device
-        self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(self.model.parameters(), **opt_args)
+        if model_name == 'transformer':
+            params = self.model.get_parameter_group_specs()
+        else:
+            params = self.model.parameters()
+        self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(params, **opt_args)
         self.scheduler = None
         if scheduler:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,
@@ -228,8 +233,10 @@ class HybridSGDTrainer:
                     validation_loss,
                     validation_accuracy)
         )
-        result_dict = {'steps': int(self.steps), 'training_loss': float(training_loss),
-                       'validation_loss': float(validation_loss), 'validation_accuracy': float(validation_accuracy)}
+        result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
+                       'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
+        if self.rank == 0:
+            wandb.log(result_dict)
         self.history.append(result_dict)
         self.model.train()
 

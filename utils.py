@@ -10,7 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 
 from trainer import HybridSGDTrainer
-from datasets import get_dataset
+from datasets.datasets import get_dataset
 from models import get_temp_state_dict
 
 
@@ -49,13 +49,15 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
         file_name=None, model_name=None, freeze_model=False, plot=False, random_vecs=200,
         num_workers=2, momentum=0.0, f_grad='first_order', z_grad='zeroth_order_cge', scheduler=False,
         scheduler_warmup_steps=0, warmup_steps=0, v_step=10.0, out_channels=8, f_batch_size=100, z_batch_size=100,
-        is_cuda_aware=False, device='cpu'):
+        is_cuda_aware=False, device='cpu', config=None):
     results = {}
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
     is_first = True if rank < fn else False
-    train_set, test_set, input_shape, n_class = get_dataset(dataset_name, path=path)
+    train_set, test_set, input_shape, n_class, args = get_dataset(dataset_name, path=path)
+    if 'vocab_size' in args:
+        config['vocab_size'] = args['vocab_size']
     lr = lr1 if is_first else lr0
     try:
         for run_number in range(1, reps + 1):
@@ -75,7 +77,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                 initial_state_dict = get_temp_state_dict(input_shape, n_class, conv_number=conv_number,
                                                          hidden=hidden, num_layer=num_layer, model_name=model_name,
                                                          freeze_model=freeze_model, out_channels=out_channels,
-                                                         device=device
+                                                         device=device, config=config
                                                          )
             if size > 1:
                 comm.barrier()
@@ -91,7 +93,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                        scheduler_warmup_steps=scheduler_warmup_steps, warmup_steps=warmup_steps,
                                        total_step_number=steps, log_period=log_period,
                                        v_step=v_step, out_channels=out_channels,
-                                       is_cuda_aware=is_cuda_aware, device=device
+                                       is_cuda_aware=is_cuda_aware, device=device,
+                                       config=config
                                        )
             if rank == 0:
                 print(f"\n--- Run number: {run_number}")

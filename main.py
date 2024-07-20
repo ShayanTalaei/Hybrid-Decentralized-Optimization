@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import torch
 import argparse
@@ -6,6 +8,7 @@ import os
 import mpi4py
 from mpi4py.util import dtlib
 from mpi4py import MPI
+import wandb
 
 if __name__ == "__main__":
     """Main function to run the script."""
@@ -13,7 +16,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Add arguments to the parser
     parser.add_argument("--seed", default=0, type=int, help="The random seed to use for training.")
-    parser.add_argument("--dataset", default="cifar10", help="The dataset to use for training and testing.")
+    parser.add_argument("--dataset", default="bracket", help="The dataset to use for training and testing.")
     parser.add_argument("--hidden", default=128, type=int, help="The number of hidden units in the model.")
     parser.add_argument("--num_layer", default=2, type=int, help="The number of layers in the model.")
     parser.add_argument("--conv_number", default=2, type=int, help="The number of convolutional layers in the model.")
@@ -24,28 +27,36 @@ if __name__ == "__main__":
     parser.add_argument("--lr1", default=0.0001, type=float, help="The learning rate for first-order optimizers.")
     parser.add_argument("--rv", default=200, type=int, help="The number of random vectors to use for zeroth-order "
                                                             "optimizers.")
-    parser.add_argument("--steps", default=200, type=int, help="The learning steps for the optimizers.")
+    parser.add_argument("--steps", default=1000, type=int, help="The learning steps for the optimizers.")
     parser.add_argument("--log_period", default=10, type=int, help="The log period.")
     parser.add_argument("--fn", default=3, type=int, help="The number of first-order optimizers.")
     parser.add_argument("--activation", default="relu", help="The activation function to use in the model.")
     parser.add_argument("--save", action="store_true", help="Whether to save the trained model.")
     parser.add_argument("--path", default="./", help="The directory where the trained model should be saved.")
     parser.add_argument("--criterion", default="cross_entropy", help="The loss function to use for training.")
-    parser.add_argument("--model", default="resnet", help="The model to use for training. If None, a default model is "
+    parser.add_argument("--model", default="transformer", help="The model to use for training. If None, a default model is "
                                                           "used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
     parser.add_argument("--scheduler", action="store_true", help="Whether to use a learning rate scheduler.")
-    parser.add_argument("--scheduler_warmup_steps", default=0, type=int, help="The number of warmup steps for the "
+    parser.add_argument("--scheduler_warmup_steps", default=100, type=int, help="The number of warmup steps for the "
                                                                               "scheduler.")
-    parser.add_argument("--warmup_steps", default=0, type=int, help="The number of warmup steps before starting the "
+    parser.add_argument("--warmup_steps", default=100, type=int, help="The number of warmup steps before starting the "
                                                                     "communication.")
     parser.add_argument("--momentum", default=0.0, type=float, help="The momentum parameter for the optimizer.")
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
-    parser.add_argument("--z_grad", default="zeroth_order_cge", help="The gradient mode for the zeroth-order.")
+    parser.add_argument("--z_grad", default="zeroth_order_rge", help="The gradient mode for the zeroth-order.")
     parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
     parser.add_argument("--mpi_cuda_aware", action="store_true", help="Whether MPI is CUDA aware.")
+    parser.add_argument('--weight_decay', default=0.1,
+                        type=float)  # I recommend you keep this value, else instabilities might arise
+    # transformer arguments
+    parser.add_argument('--dropout', default=0.1, type=float)  # keep to 0 unless in low data regime (e.g. wikitext)
+    parser.add_argument('--n_head', default=2, type=int)
+    parser.add_argument('--n_layer', default=2, type=int)  # depth in (att + ff) blocks
+    parser.add_argument('--n_embd', default=4, type=int)  # hidden size ...
+    parser.add_argument('--bias', default=False, type=bool)
 
     # mpi4py.rc.threads = False
     # MPI.Finalize()
@@ -101,6 +112,8 @@ if __name__ == "__main__":
     print('start rank:', rank)
     comm.Barrier()
     args = parser.parse_args()
+    torch.backends.cudnn.deterministic = True
+    random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
@@ -114,8 +127,9 @@ if __name__ == "__main__":
 
     # Convert string arguments to appropriate data types
     print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size(), 'device:', device)
-    comm.Barrier()
     if rank == 0:
+        wandb.login()
+        wandb.init(project="HDO", group=args.dataset + "_" + args.model, config=vars(args))
         print(f"Learning rates: Zero-order: {args.lr0}, First-order: {args.lr1}")
         print(f"Steps: {args.steps}")
         print(f"Number of layer: {args.num_layer}")
@@ -142,6 +156,8 @@ if __name__ == "__main__":
         print(f"File name: {args.file_name}")
         print(f"Path: {args.path}")
         print(f"Is CUDA aware: {args.mpi_cuda_aware}")
+
+    comm.Barrier()
 
     # Run the training script
 
@@ -172,5 +188,8 @@ if __name__ == "__main__":
                f_batch_size=args.f_batch_size,
                z_batch_size=args.z_batch_size,
                is_cuda_aware=args.mpi_cuda_aware,
-               device=device
+               device=device,
+               config=args
                )
+    if rank == 0:
+        wandb.finish()

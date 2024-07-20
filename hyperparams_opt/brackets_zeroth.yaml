@@ -1,0 +1,39 @@
+program: main.py
+project: HDO
+name: brackets_zeroth
+method: random
+metric:
+  goal: minimize
+  name: eval/loss
+parameters:
+  lr0:
+    min: 0.00001
+    max: 0.1
+  momentum:
+    min: 0.0
+    max: 0.95
+  rv:
+    values: [8, 16, 32, 64, 128]
+  z_batch_size:
+    values: [128, 256, 1024, 2048]
+  v_steps:
+    values: [0.01, 0.1, 0.5, 1, 2, 4, 8, 16]
+
+
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - "--dataset"
+  - "bracket"
+  - "--optimizer"
+#  - "zeroth_order_rge"
+  - "zeroth_order_forward-mode_AD_sim"
+  - "--model"
+  - "transformer"
+  - "--scheduler"
+  - "--fn"
+  - "0"
+  - ${args}
+
+  
