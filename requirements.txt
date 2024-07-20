@@ -7,3 +7,4 @@ tqdm
 pytorch_warmup
 mpi4py
 wandb
+jsonlines
