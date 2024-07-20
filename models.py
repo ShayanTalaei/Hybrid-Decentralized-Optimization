@@ -195,3 +195,6 @@ class TransformerModel(EnhancedModel):
 
     def forward(self, x):
         return self.model(x)
+
+    def get_parameter_group_specs(self):
+        return self.model.get_parameter_group_specs()
