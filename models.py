@@ -72,8 +72,6 @@ class EnhancedModel(nn.Module):
         with torch.no_grad():
             for data in dataloader:
                 xb, yb = data
-                print(xb)
-                print(yb)
                 xb, yb = xb.to(self.device), yb.to(self.device)
                 count += 1
                 outputs = model(xb)
@@ -194,6 +192,7 @@ class TransformerModel(EnhancedModel):
     def __init__(self, config):
         super().__init__(**vars(config))
         self.model = GPTBaseClassification(config)
+        self.model.to(self.device)
 
     def forward(self, x):
         return self.model(x)
