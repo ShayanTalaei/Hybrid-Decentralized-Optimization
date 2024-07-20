@@ -152,7 +152,7 @@ class GPTBaseClassification(nn.Module):
 
         # report number of parameters
         # print("number of parameters: %.2fM" % (self.get_num_params()/1e6,))
-        print("number of parameters: %.2fM" % (self.get_num_params(),))
+        print("number of parameters: %.2f" % (self.get_num_params(),))
 
     def get_num_params(self, non_embedding=True):
         """
