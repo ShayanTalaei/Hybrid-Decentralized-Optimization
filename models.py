@@ -20,7 +20,7 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = input_shape[0]
 
-        model = GPTBaseClassification(config)
+        model = TransformerModel(config)
     else:
         model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, device=device)
     state_dict = model.state_dict()
@@ -39,7 +39,7 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = input_shape[0]
 
-        model = GPTBaseClassification(config)
+        model = TransformerModel(config)
     else:
         model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, **kwargs)
 
@@ -184,4 +184,14 @@ class ResNetModel(EnhancedModel):
         :return: The output.
         """
         x = self.preprocess(x)
+        return self.model(x)
+
+
+class TransformerModel(EnhancedModel):
+
+    def __init__(self, config):
+        super().__init__(**vars(config))
+        self.model = GPTBaseClassification(config)
+
+    def forward(self, x):
         return self.model(x)
