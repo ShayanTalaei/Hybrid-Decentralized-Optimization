@@ -266,14 +266,13 @@ class GPTBaseClassification(nn.Module):
         ), "parameters %s were not separated into either decay/no_decay set!" % (
             str(param_dict.keys() - union_params),
         )
-        decay_opt = {}
-        no_decay_opt = {}
+        decay_opt = []
+        no_decay_opt = []
         for k, v in self.named_parameters():
-            print(type(v))
             if k in decay:
-                decay_opt[k] = v
+                decay_opt.append(v)
             else:
-                no_decay_opt[k] = v
+                no_decay_opt.append(v)
         # create the pytorch optimizer object
         return [
             {"params": decay_opt},
