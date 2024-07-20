@@ -34,9 +34,10 @@ class BracketTokenizer:
         """
         token_ids = [self.bos_token_id] + [self.word_to_index.get(word, self.unk_token_id) for word in text.split()] + [
             self.eos_token_id]
+        print(len(token_ids))
         if max_length:
             token_ids = token_ids[:max_length + 2] + [self.pad_token_id] * (max_length - len(token_ids) + 2)
-
+        print(len(token_ids))
         return token_ids
 
     def decode(self, sequence, skip_special_tokens=True):
