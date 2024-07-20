@@ -72,6 +72,8 @@ class EnhancedModel(nn.Module):
         with torch.no_grad():
             for data in dataloader:
                 xb, yb = data
+                print(xb)
+                print(yb)
                 xb, yb = xb.to(self.device), yb.to(self.device)
                 count += 1
                 outputs = model(xb)
