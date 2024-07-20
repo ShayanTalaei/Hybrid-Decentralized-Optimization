@@ -173,7 +173,7 @@ class ZAD(Optimizer):
             loss = criterion(model(data), target)
             # weight decay
             norms = torch._foreach_norm(self.params_data)
-            torch._forech_pow_(norms, 2)
+            torch._foreach_pow_(norms, 2)
             torch._foreach_mul_(norms, self.weight_decays)
             loss += torch.sum(norms)
             loss.backward()
