@@ -16,7 +16,7 @@ parameters:
     values: [8, 16, 32, 64, 128]
   z_batch_size:
     values: [128, 256, 1024, 2048]
-  v_steps:
+  v_step:
     values: [0.01, 0.1, 0.5, 1, 2, 4, 8, 16]
 
 
@@ -26,7 +26,7 @@ command:
   - ${program}
   - "--dataset"
   - "bracket"
-  - "--optimizer"
+  - "--z_grad"
 #  - "zeroth_order_rge"
   - "zeroth_order_forward-mode_AD_sim"
   - "--model"
