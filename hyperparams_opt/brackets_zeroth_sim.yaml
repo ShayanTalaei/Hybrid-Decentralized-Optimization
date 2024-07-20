@@ -26,13 +26,13 @@ command:
   - ${program}
   - "--dataset"
   - "bracket"
-  - "--f_grad"
+  - "--z_grad"
   - "zeroth_order_forward-mode_AD_sim"
   - "--model"
   - "transformer"
   - "--scheduler"
   - "--fn"
-  - "1"
+  - "0"
   - ${args}
 
   
