@@ -6,7 +6,7 @@ import torch
 
 from datasets.bracket import BracketTokenizer, BracketDataset
 
-EXTRACTED_DATASETS = ['birds', 'flowers', 'pets', 'food101']
+EXTRACTED_DATASETS = ['birds', 'flowers', 'pets', 'food101', 'bracket']
 DATASETS = EXTRACTED_DATASETS + ['fmnist', 'year_pred', 'mnist', 'cifar10', 'cifar100']
 NUM_CLASSES = {'birds': 500,
                'flowers': 102,

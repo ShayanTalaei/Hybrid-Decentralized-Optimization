@@ -39,7 +39,6 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = input_shape[0]
 
-
         model = GPTBaseClassification(config)
     else:
         model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, **kwargs)
