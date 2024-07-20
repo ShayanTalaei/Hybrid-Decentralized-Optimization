@@ -175,7 +175,7 @@ class ZAD(Optimizer):
             norms = torch._foreach_norm(self.params_data)
             torch._foreach_pow_(norms, 2)
             torch._foreach_mul_(norms, self.weight_decays)
-            loss += torch.sum(norms)
+            loss += torch.sum(torch.tensor(norms))
             loss.backward()
             with torch.no_grad():
                 torch._foreach_mul_(self.grad, self.momentum)
