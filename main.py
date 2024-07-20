@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr1", default=0.0001, type=float, help="The learning rate for first-order optimizers.")
     parser.add_argument("--rv", default=200, type=int, help="The number of random vectors to use for zeroth-order "
                                                             "optimizers.")
-    parser.add_argument("--steps", default=1000, type=int, help="The learning steps for the optimizers.")
+    parser.add_argument("--steps", default=700, type=int, help="The learning steps for the optimizers.")
     parser.add_argument("--log_period", default=10, type=int, help="The log period.")
     parser.add_argument("--fn", default=3, type=int, help="The number of first-order optimizers.")
     parser.add_argument("--activation", default="relu", help="The activation function to use in the model.")

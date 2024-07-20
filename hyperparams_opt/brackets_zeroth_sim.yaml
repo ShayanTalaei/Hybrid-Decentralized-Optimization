@@ -1,6 +1,6 @@
 program: main.py
 project: HDO
-name: brackets_zeroth
+name: brackets_zeroth_sim
 method: random
 metric:
   goal: minimize
@@ -17,7 +17,7 @@ parameters:
   z_batch_size:
     values: [128, 256, 1024, 2048]
   v_step:
-    values: [0.01, 0.1, 0.5, 1, 2, 4, 8, 16]
+    values: [0.01, 0.1, 1, 2, 4, 8, 16]
 
 
 command:
@@ -26,14 +26,13 @@ command:
   - ${program}
   - "--dataset"
   - "bracket"
-  - "--z_grad"
-#  - "zeroth_order_rge"
+  - "--f_grad"
   - "zeroth_order_forward-mode_AD_sim"
   - "--model"
   - "transformer"
   - "--scheduler"
   - "--fn"
-  - "0"
+  - "1"
   - ${args}
 
   
