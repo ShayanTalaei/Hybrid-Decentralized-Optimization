@@ -18,6 +18,7 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
     elif model_name == 'transformer':
         vars(config)['device'] = device
         vars(config)['n_class'] = n_class
+        vars(config)['sequence_length'] = input_shape[0]
 
         model = GPTBaseClassification(config)
     else:
@@ -36,6 +37,8 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
     elif kwargs['model_name'] == 'transformer':
         vars(config)['device'] = kwargs['device']
         vars(config)['n_class'] = n_class
+        vars(config)['sequence_length'] = input_shape[0]
+
 
         model = GPTBaseClassification(config)
     else:
