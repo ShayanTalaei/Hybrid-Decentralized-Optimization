@@ -198,7 +198,6 @@ class GPTBaseClassification(nn.Module):
         #     loss = None
         # logits = logits if get_logits else None
         # return {'logits': logits, 'loss': loss}
-        print(idx.size(), x.size())
 
         return self.lm_head(x.reshape(x.size(0), -1))
 
