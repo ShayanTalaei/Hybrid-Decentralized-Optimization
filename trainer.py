@@ -37,7 +37,7 @@ class HybridSGDTrainer:
         self.grad_mode = grad_mode
         self.criterion = get_criterion(dataset_name)
         grad_mode_to_opt = {'first_order': 'SGD', 'zeroth_order_forward-mode_AD': 'ZAD', 'zeroth_order_rge': 'ZAD', 'zeroth_order_cge': 'ZAD', 'zeroth_order_forward-mode_AD_sim': 'ZAD'}
-        opt_args = {'lr': lr, 'momentum': momentum, 'weight_decay': config['weight_decay']}
+        opt_args = {'lr': lr, 'momentum': momentum, 'weight_decay': config.weight_decay}
         if self.grad_mode.startswith('zeroth_order'):
             opt_args['random_vec'] = random_vecs
             opt_args['names'] = list(n for n, _ in self.model.named_parameters())

@@ -57,7 +57,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
     is_first = True if rank < fn else False
     train_set, test_set, input_shape, n_class, args = get_dataset(dataset_name, path=path)
     if 'vocab_size' in args:
-        config['vocab_size'] = args['vocab_size']
+        vars(config)['vocab_size'] = args['vocab_size']
     lr = lr1 if is_first else lr0
     try:
         for run_number in range(1, reps + 1):

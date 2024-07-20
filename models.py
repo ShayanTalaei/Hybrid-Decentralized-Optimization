@@ -16,8 +16,8 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
     if model_name == 'resnet':
         model = ResNetModel(n_class, freeze=freeze_model, device=device)
     elif model_name == 'transformer':
-        config['device'] = device
-        config['n_class'] = n_class
+        vars(config)['device'] = device
+        vars(config)['n_class'] = n_class
 
         model = GPTBaseClassification(config)
     else:
@@ -34,8 +34,8 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
     if kwargs['model_name'] == 'resnet':
         model = ResNetModel(n_class, freeze=kwargs['freeze_model'], **kwargs)
     elif kwargs['model_name'] == 'transformer':
-        config['device'] = kwargs['device']
-        config['n_class'] = n_class
+        vars(config)['device'] = kwargs['device']
+        vars(config)['n_class'] = n_class
 
         model = GPTBaseClassification(config)
     else:
