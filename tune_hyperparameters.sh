@@ -1,4 +1,4 @@
-data#!/bin/bash
+#!/bin/bash
 
 PROJECT_NAME="HDO"
 
