@@ -189,7 +189,7 @@ if __name__ == "__main__":
                z_batch_size=args.z_batch_size,
                is_cuda_aware=args.mpi_cuda_aware,
                device=device,
-               config=args
+               config=vars(args)
                )
     if rank == 0:
         wandb.finish()
