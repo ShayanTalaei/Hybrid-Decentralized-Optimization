@@ -73,7 +73,6 @@ class EnhancedModel(nn.Module):
             for data in dataloader:
                 xb, yb = data
                 xb, yb = xb.to(self.device), yb.to(self.device)
-                print(xb.size(), yb.size())
                 count += 1
                 outputs = model(xb)
                 loss = criterion(outputs, yb)

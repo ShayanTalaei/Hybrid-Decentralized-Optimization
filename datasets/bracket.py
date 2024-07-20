@@ -80,7 +80,7 @@ class BracketDataset(Dataset):
                 self.text_samples.append(sample)
                 input_ids = self.tokenizer.encode(sample['input'], max_length=sent_max_length)
                 # self.samples.append({"ids": input_ids[:-1], "label": input_ids[1:]})
-                self.samples.append({"ids": torch.tensor(input_ids[:-1]), "label": torch.tensor(self.label_to_id[sample['label']])})
+                self.samples.append({"ids": torch.tensor(input_ids), "label": torch.tensor(self.label_to_id[sample['label']])})
 
     def __len__(self):
         return len(self.samples)
