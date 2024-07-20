@@ -21,4 +21,4 @@ run_sweep_and_agent () {
 }
 
 # list of sweeps to call
-run_sweep_and_agent "brackets_zeroth_first"
+run_sweep_and_agent "brackets_first"
