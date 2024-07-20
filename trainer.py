@@ -48,7 +48,6 @@ class HybridSGDTrainer:
             params = self.model.get_parameter_group_specs()
         else:
             params = self.model.parameters()
-        print(params)
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(params, **opt_args)
         self.scheduler = None
         if scheduler:

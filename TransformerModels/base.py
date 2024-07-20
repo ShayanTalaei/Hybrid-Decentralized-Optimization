@@ -269,6 +269,7 @@ class GPTBaseClassification(nn.Module):
         decay_opt = {}
         no_decay_opt = {}
         for k, v in self.named_parameters():
+            print(v)
             if k in decay:
                 decay_opt[k] = v
             else:
