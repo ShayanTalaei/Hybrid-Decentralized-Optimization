@@ -17,7 +17,7 @@ run_sweep_and_agent () {
   rm temp_output.txt
 
   # Run the wandb agent command
-  wandb agent --count 10 "$SWEEP_ID" --project "$PROJECT_NAME"
+  wandb agent --count 100 "$SWEEP_ID" --project "$PROJECT_NAME"
 }
 
 # list of sweeps to call
