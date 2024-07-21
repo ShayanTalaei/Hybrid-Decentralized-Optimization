@@ -21,6 +21,13 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
         vars(config)['sequence_length'] = input_shape[0]
 
         model = TransformerModel(config)
+    elif model_name == 'vtransformer':
+        vars(config)['device'] = device
+        vars(config)['n_class'] = n_class
+        vars(config)['sequence_length'] = torch.prod(torch.tensor(input_shape)).item()
+        vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
+
+        model = TransformerModel(config)
     else:
         model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, device=device)
     state_dict = model.state_dict()
@@ -38,6 +45,13 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
         vars(config)['device'] = kwargs['device']
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = input_shape[0]
+
+        model = TransformerModel(config)
+    elif kwargs['model_name'] == 'vtransformer':
+        vars(config)['device'] = kwargs['device']
+        vars(config)['n_class'] = n_class
+        vars(config)['sequence_length'] = torch.prod(torch.tensor(input_shape)).item()
+        vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
 
         model = TransformerModel(config)
     else:
@@ -201,7 +215,7 @@ class TransformerModel(EnhancedModel):
         self.model.to(self.device)
 
     def forward(self, x):
-        return self.model(x)
+        return self.model(torch.reshape(x, (x.shape[0], -1)))
 
     def get_parameter_group_specs(self):
         """

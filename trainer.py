@@ -44,7 +44,7 @@ class HybridSGDTrainer:
             opt_args['grad_mode'] = grad_mode
             opt_args['v_step'] = v_step
             opt_args['device'] = device
-        if model_name == 'transformer':
+        if model_name == 'transformer' or model_name == 'vtransformer':
             params, names = self.model.get_parameter_group_specs()
             if self.grad_mode.startswith('zeroth_order'):
                 opt_args['names'] = names[0] + names[1]
