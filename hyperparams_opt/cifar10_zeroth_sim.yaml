@@ -29,7 +29,7 @@ command:
   - "--z_grad"
   - "zeroth_order_forward-mode_AD_sim"
   - "--model"
-  - "transformer"
+  - "vtransformer"
   - "--scheduler"
   - "--fn"
   - "0"

@@ -23,7 +23,7 @@ command:
   - "--dataset"
   - "cifar10"
   - "--model"
-  - "transformer"
+  - "vtransformer"
   - "--scheduler"
   - "--fn"
   - "1"
