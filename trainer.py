@@ -202,7 +202,6 @@ class HybridSGDTrainer:
         return self.history
 
     def train_solo(self):
-        print("hellooo")
         assert self.size == 1
         for taken_steps in range((self.total_step_number + self.warmup_steps) // len(self.train_loader) + 1):
             # step_loss = 0
@@ -215,7 +214,7 @@ class HybridSGDTrainer:
                 # step_loss += loss
                 # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.training_loss = loss
-                if loss is None or loss > 10 ** 4:  # Diverged!
+                if torch.isnan(loss) or loss > 10 ** 4:  # Diverged!
                     # step_loss /= len(self.train_loader)
                     # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
                     return self.history
