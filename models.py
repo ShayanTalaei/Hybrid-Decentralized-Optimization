@@ -255,14 +255,19 @@ class TransformerModel(EnhancedModel):
         )
         decay_opt = []
         no_decay_opt = []
+        decay_opt_names = []
+        no_decay_opt_names = []
         for k, v in self.named_parameters():
             if k in decay:
-                print('helloooooooooo')
                 decay_opt.append(v)
-            else:
+                decay_opt_names.append(k)
+            elif k in no_decay:
                 no_decay_opt.append(v)
+                no_decay_opt_names.append(k)
+            else:
+                raise ValueError("error, parameter not separated into either decay/no_decay set")
         # create the pytorch optimizer object
         return [
             {"params": decay_opt},
             {"params": no_decay_opt, "weight_decay": 0.0},
-        ]
+        ], [decay_opt_names, no_decay_opt_names]

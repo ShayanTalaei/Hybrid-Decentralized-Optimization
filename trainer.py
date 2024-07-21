@@ -45,7 +45,8 @@ class HybridSGDTrainer:
             opt_args['v_step'] = v_step
             opt_args['device'] = device
         if model_name == 'transformer':
-            params = self.model.get_parameter_group_specs()
+            params, names = self.model.get_parameter_group_specs()
+            opt_args['names'] = names[0] + names[1]
         else:
             params = self.model.parameters()
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(params, **opt_args)
