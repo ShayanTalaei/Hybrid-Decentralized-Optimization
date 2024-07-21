@@ -202,6 +202,7 @@ class HybridSGDTrainer:
         return self.history
 
     def train_solo(self):
+        print("hellooo")
         assert self.size == 1
         for taken_steps in range((self.total_step_number + self.warmup_steps) // len(self.train_loader) + 1):
             # step_loss = 0
