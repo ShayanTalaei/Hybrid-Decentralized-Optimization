@@ -46,7 +46,8 @@ class HybridSGDTrainer:
             opt_args['device'] = device
         if model_name == 'transformer':
             params, names = self.model.get_parameter_group_specs()
-            opt_args['names'] = names[0] + names[1]
+            if self.grad_mode.startswith('zeroth_order'):
+                opt_args['names'] = names[0] + names[1]
         else:
             params = self.model.parameters()
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(params, **opt_args)
