@@ -132,7 +132,7 @@ class HybridSGDTrainer:
                 loss = self.take_step(data, target)
                 # step_loss += loss
                 # print(f"Rank {self.rank} steps: {self.steps} after take step")
-                if loss > 10 ** 4:  # Diverged!
+                if loss is None or loss > 10 ** 4:  # Diverged!
                     # step_loss /= len(self.train_loader)
                     # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
                     self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
