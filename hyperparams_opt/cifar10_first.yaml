@@ -1,6 +1,6 @@
 program: main.py
 project: HDO
-name: brackets_first
+name: cifar10_first
 method: random
 metric:
   goal: minimize

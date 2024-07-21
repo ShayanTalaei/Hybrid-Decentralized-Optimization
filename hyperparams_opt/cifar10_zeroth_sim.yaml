@@ -1,6 +1,6 @@
 program: main.py
 project: HDO
-name: brackets_zeroth_sim
+name: cifar10_zeroth_sim
 method: random
 metric:
   goal: minimize
