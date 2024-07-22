@@ -42,7 +42,8 @@ if __name__ == "__main__":
                                                                               "scheduler.")
     parser.add_argument("--warmup_steps", default=100, type=int, help="The number of warmup steps before starting the "
                                                                     "communication.")
-    parser.add_argument("--momentum", default=0.0, type=float, help="The momentum parameter for the optimizer.")
+    parser.add_argument("--momentum0", default=0.0, type=float, help="The momentum parameter for the zeroth optimizer.")
+    parser.add_argument("--momentum1", default=0.0, type=float, help="The momentum parameter for the first optimizer.")
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
     parser.add_argument("--z_grad", default="zeroth_order_rge", help="The gradient mode for the zeroth-order.")
     parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
@@ -150,7 +151,8 @@ if __name__ == "__main__":
         print(f"Learning rate scheduler warmup steps: {args.scheduler_warmup_steps}")
         print(f"Warmup steps: {args.warmup_steps}")
         print(f"v_step: {args.v_step}")
-        print(f"Momentum: {args.momentum}")
+        print(f"Momentum0: {args.momentum0}")
+        print(f"Momentum1: {args.momentum1}")
         print(f"Log period: {args.log_period}")
         print(f"Plot: {args.plot}")
         print(f"File name: {args.file_name}")
@@ -160,7 +162,6 @@ if __name__ == "__main__":
     comm.Barrier()
 
     # Run the training script
-
     logs = run(args.fn,
                args.dataset,
                args.steps,
@@ -177,7 +178,8 @@ if __name__ == "__main__":
                freeze_model=args.freeze_model,
                plot=args.plot,
                random_vecs=args.rv,
-               momentum=args.momentum,
+               momentum0=args.momentum0,
+               momentum1=args.momentum1,
                f_grad=args.f_grad,
                z_grad=args.z_grad,
                scheduler=args.scheduler,
@@ -191,5 +193,6 @@ if __name__ == "__main__":
                device=device,
                config=args
                )
+
     if rank == 0:
         wandb.finish()

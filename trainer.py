@@ -14,8 +14,9 @@ class HybridSGDTrainer:
 
     def __init__(self, rank, size, comm, fn, grad_mode, dataset_name, train_loader, test_loader, initial_state_dict,
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
-                 momentum=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
-                 log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu', config=None):
+                 momentum0=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
+                 log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu', config=None,
+                 momentum1=0.0):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
@@ -37,13 +38,14 @@ class HybridSGDTrainer:
         self.grad_mode = grad_mode
         self.criterion = get_criterion(dataset_name)
         grad_mode_to_opt = {'first_order': 'SGD', 'zeroth_order_forward-mode_AD': 'ZAD', 'zeroth_order_rge': 'ZAD', 'zeroth_order_cge': 'ZAD', 'zeroth_order_forward-mode_AD_sim': 'ZAD'}
-        opt_args = {'lr': lr, 'momentum': momentum, 'weight_decay': config.weight_decay}
+        opt_args = {'lr': lr, 'momentum': momentum1, 'weight_decay': config.weight_decay}
         if self.grad_mode.startswith('zeroth_order'):
             opt_args['random_vec'] = random_vecs
             opt_args['names'] = list(n for n, _ in self.model.named_parameters())
             opt_args['grad_mode'] = grad_mode
             opt_args['v_step'] = v_step
             opt_args['device'] = device
+            opt_args['momentum'] = momentum0
         if model_name == 'transformer' or model_name == 'vtransformer':
             params, names = self.model.get_parameter_group_specs()
             if self.grad_mode.startswith('zeroth_order'):
