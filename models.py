@@ -89,14 +89,14 @@ class EnhancedModel(nn.Module):
                 xb, yb = xb.to(self.device), yb.to(self.device)
                 count += 1
                 outputs = model(xb)
-                loss = criterion(outputs, yb)
+                loss = criterion(outputs, yb).item()
                 data_count += xb.shape[0]
                 total_loss += loss
                 if self.acc_def == "class number":
                     preds = torch.argmax(outputs, dim=1)
-                    corrects += torch.sum((preds == yb).float())
+                    corrects += torch.sum((preds == yb).float()).item()
                 else:
-                    corrects += torch.sum((torch.abs(outputs - yb) < 0.01).float())
+                    corrects += torch.sum((torch.abs(outputs - yb) < 0.01).float()).item()
 
         result["loss"] = float(total_loss / count)
         result["accuracy"] = float(corrects / data_count)

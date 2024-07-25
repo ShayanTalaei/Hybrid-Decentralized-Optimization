@@ -86,9 +86,9 @@ class BracketDataset(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
-        cp = deepcopy(self.samples[index])
-        return cp['ids'], cp['label']
-
+        # cp = deepcopy(self.samples[index])
+        # return cp['ids'], cp['label']
+        return self.samples[index]['ids'], self.samples[index]['label']
     def __padding(self, inputs, max_length=-1):
         """
         Pad inputs to the max_length.
