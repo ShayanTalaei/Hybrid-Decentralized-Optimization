@@ -126,8 +126,8 @@ class HybridSGDTrainer:
                 if self.steps % self.log_period == 0:
                     print(f"Rank {self.rank} steps: {self.steps} evaluate")
                     self.comm.Barrier()
-                    # if self.rank == 0:
-                    self.evaluate()
+                    if self.rank == 0:
+                        self.evaluate()
                     self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
