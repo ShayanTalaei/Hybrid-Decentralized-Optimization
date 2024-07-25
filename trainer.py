@@ -16,13 +16,14 @@ class HybridSGDTrainer:
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
                  momentum0=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
                  log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu', config=None,
-                 momentum1=0.0):
+                 momentum1=0.0, concurrency=1):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
         self.comm = comm
         self.fn = fn
         self.lr = lr
+        self.concurrency = concurrency
         self.total_step_number = total_step_number
         self.log_period = log_period
         self.is_cuda_aware = is_cuda_aware
@@ -126,12 +127,15 @@ class HybridSGDTrainer:
                 if self.steps % self.log_period == 0:
                     print(f"Rank {self.rank} steps: {self.steps} evaluate")
                     self.comm.Barrier()
-                    if self.rank == 0:
-                        self.evaluate()
+                    # if self.rank == 0:
+                    self.evaluate()
                     self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
-                loss = self.take_step(data, target)
+                for turn in range(self.size // self.concurrency + 1):
+                    if self.rank // self.concurrency == turn:
+                        loss = self.take_step(data, target)
+                    self.comm.Barrier()
                 # step_loss += loss
                 # print(f"Rank {self.rank} steps: {self.steps} after take step")
                 if loss is None or loss > 10 ** 4:  # Diverged!
@@ -229,9 +233,12 @@ class HybridSGDTrainer:
 
     def evaluate(self):
         self.model.eval()
-        result = self.model.evaluate(self.test_loader, self.criterion)
-        validation_loss = result['Loss']
-        validation_accuracy = result['Accuracy']
+        for turn in range(self.size // self.concurrency + 1):
+            if self.rank // self.concurrency == turn:
+                result = self.model.evaluate(self.test_loader, self.criterion)
+            self.comm.Barrier()
+        validation_loss = result['loss']
+        validation_accuracy = result['accuracy']
         training_loss = self.training_loss if self.training_loss else 0
         print(f"Rank {self.rank}: " +
             "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
@@ -240,11 +247,19 @@ class HybridSGDTrainer:
                     validation_loss,
                     validation_accuracy)
         )
-        result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
-                       'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
+        validation_loss_cum = self.comm.reduce(validation_loss, op=MPI.SUM, root=0)
+        validation_accuracy_cum = self.comm.reduce(validation_accuracy, op=MPI.SUM, root=0)
+        training_loss_cum = self.comm.reduce(training_loss, op=MPI.SUM, root=0)
         if self.rank == 0:
+            validation_loss = validation_loss_cum / self.size
+            validation_accuracy = validation_accuracy_cum / self.size
+            training_loss = training_loss_cum / self.size
+
+            result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
+                           'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
             wandb.log(result_dict)
-        self.history.append(result_dict)
+            self.history.append(result_dict)
+
         self.model.train()
 
     def copy_to_model(self, model_copy_tensor):

@@ -59,6 +59,8 @@ if __name__ == "__main__":
     parser.add_argument('--n_embd', default=4, type=int)  # hidden size ...
     parser.add_argument('--bias', default=False, type=bool)
 
+    parser.add_argument('--concurrency', default=1, type=int)
+
     # mpi4py.rc.threads = False
     # MPI.Finalize()
     # os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
@@ -153,6 +155,7 @@ if __name__ == "__main__":
         print(f"v_step: {args.v_step}")
         print(f"Momentum0: {args.momentum0}")
         print(f"Momentum1: {args.momentum1}")
+        print(f"concurrency: {args.concurrency}")
         print(f"Log period: {args.log_period}")
         print(f"Plot: {args.plot}")
         print(f"File name: {args.file_name}")
@@ -190,6 +193,7 @@ if __name__ == "__main__":
                f_batch_size=args.f_batch_size,
                z_batch_size=args.z_batch_size,
                is_cuda_aware=args.mpi_cuda_aware,
+               concurrency=args.concurrency,
                device=device,
                config=args
                )
