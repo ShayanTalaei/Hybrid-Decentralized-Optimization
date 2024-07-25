@@ -238,7 +238,7 @@ class HybridSGDTrainer:
                 print(f"Rank {self.rank} steps: {self.steps} evaluate")
                 result = self.model.evaluate(self.test_loader, self.criterion)
                 # empty cache
-                torch.cuda.empty_cache()
+                # torch.cuda.empty_cache()
             self.comm.Barrier()
         validation_loss = result['loss']
         validation_accuracy = result['accuracy']

@@ -97,6 +97,8 @@ class EnhancedModel(nn.Module):
                     corrects += torch.sum((preds == yb).float()).item()
                 else:
                     corrects += torch.sum((torch.abs(outputs - yb) < 0.01).float()).item()
+                torch.cuda.empty_cache()
+
 
         result["loss"] = float(total_loss / count)
         result["accuracy"] = float(corrects / data_count)
