@@ -240,26 +240,26 @@ class HybridSGDTrainer:
                     validation_loss,
                     validation_accuracy)
         )
-        validation_loss_cum = self.comm.reduce(validation_loss, op=MPI.SUM, root=0)
-        validation_accuracy_cum = self.comm.reduce(validation_accuracy, op=MPI.SUM, root=0)
-        training_loss_cum = self.comm.reduce(training_loss, op=MPI.SUM, root=0)
-        if self.rank == 0:
-            validation_loss = validation_loss_cum / self.size
-            validation_accuracy = validation_accuracy_cum / self.size
-            training_loss = training_loss_cum / self.size
-
-            result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
-                           'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
+        # validation_loss_cum = self.comm.reduce(validation_loss, op=MPI.SUM, root=0)
+        # validation_accuracy_cum = self.comm.reduce(validation_accuracy, op=MPI.SUM, root=0)
+        # training_loss_cum = self.comm.reduce(training_loss, op=MPI.SUM, root=0)
         # if self.rank == 0:
-            wandb.log(result_dict)
-            self.history.append(result_dict)
-            # printing the cumulative loss and accuracy
-            print(f"Rank {self.rank}: " +
-                "Cumulative Training loss: {:.4f}, Cumulative Validation loss: {:.4f}, Cumulative Validation accuracy: {:.2f}"
-                .format(training_loss,
-                        validation_loss,
-                        validation_accuracy)
-            )
+        #     validation_loss = validation_loss_cum / self.size
+        #     validation_accuracy = validation_accuracy_cum / self.size
+        #     training_loss = training_loss_cum / self.size
+        #
+        #     result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
+        #                    'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
+        # # if self.rank == 0:
+        #     wandb.log(result_dict)
+        #     self.history.append(result_dict)
+        #     # printing the cumulative loss and accuracy
+        #     print(f"Rank {self.rank}: " +
+        #         "Cumulative Training loss: {:.4f}, Cumulative Validation loss: {:.4f}, Cumulative Validation accuracy: {:.2f}"
+        #         .format(training_loss,
+        #                 validation_loss,
+        #                 validation_accuracy)
+        #     )
 
         self.model.train()
 
