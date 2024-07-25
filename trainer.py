@@ -125,7 +125,7 @@ class HybridSGDTrainer:
             for (data, target) in self.train_loader:
 
                 if self.steps % self.log_period == 0:
-                    print(f"Rank {self.rank} steps: {self.steps} evaluate")
+                    # print(f"Rank {self.rank} steps: {self.steps} evaluate")
                     self.comm.Barrier()
                     # if self.rank == 0:
                     self.evaluate()
@@ -235,6 +235,7 @@ class HybridSGDTrainer:
         self.model.eval()
         for turn in range(self.size // self.concurrency + 1):
             if self.rank // self.concurrency == turn:
+                print(f"Rank {self.rank} steps: {self.steps} evaluate")
                 result = self.model.evaluate(self.test_loader, self.criterion)
             self.comm.Barrier()
         validation_loss = result['loss']
