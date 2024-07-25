@@ -98,8 +98,8 @@ class EnhancedModel(nn.Module):
                 else:
                     corrects += torch.sum((torch.abs(outputs - yb) < 0.01).float())
 
-        result["Loss"] = float(total_loss / count)
-        result["Accuracy"] = float(corrects / data_count)
+        result["loss"] = float(total_loss / count)
+        result["accuracy"] = float(corrects / data_count)
         model.train(model_initial_training)
         return result
 
