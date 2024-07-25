@@ -126,8 +126,8 @@ class HybridSGDTrainer:
                 if self.steps % self.log_period == 0:
                     print(f"Rank {self.rank} steps: {self.steps} evaluate")
                     self.comm.Barrier()
-                    # if self.rank == 0:
-                    self.evaluate()
+                    if self.rank == 0:
+                        self.evaluate()
                     self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
@@ -230,8 +230,8 @@ class HybridSGDTrainer:
     def evaluate(self):
         self.model.eval()
         result = self.model.evaluate(self.test_loader, self.criterion)
-        validation_loss = result['loss']
-        validation_accuracy = result['accuracy']
+        validation_loss = result['Loss']
+        validation_accuracy = result['Accuracy']
         training_loss = self.training_loss if self.training_loss else 0
         print(f"Rank {self.rank}: " +
             "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
@@ -240,27 +240,11 @@ class HybridSGDTrainer:
                     validation_loss,
                     validation_accuracy)
         )
-        validation_loss_cum = self.comm.reduce(validation_loss, op=MPI.SUM, root=0)
-        validation_accuracy_cum = self.comm.reduce(validation_accuracy, op=MPI.SUM, root=0)
-        training_loss_cum = self.comm.reduce(training_loss, op=MPI.SUM, root=0)
+        result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
+                       'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
         if self.rank == 0:
-            validation_loss = validation_loss_cum / self.size
-            validation_accuracy = validation_accuracy_cum / self.size
-            training_loss = training_loss_cum / self.size
-
-            result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
-                           'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
-        # if self.rank == 0:
             wandb.log(result_dict)
-            self.history.append(result_dict)
-            # printing the cumulative loss and accuracy
-            print(f"Rank {self.rank}: " +
-                "Cumulative Training loss: {:.4f}, Cumulative Validation loss: {:.4f}, Cumulative Validation accuracy: {:.2f}"
-                .format(training_loss,
-                        validation_loss,
-                        validation_accuracy)
-            )
-
+        self.history.append(result_dict)
         self.model.train()
 
     def copy_to_model(self, model_copy_tensor):
