@@ -33,8 +33,6 @@ class HybridSGDTrainer:
                                out_channels=out_channels, device=device, config=config)
 
         self.model.load_state_dict(initial_state_dict)
-        # converting to 16-bit precision
-        self.model = self.model.half()
         self.test_loader = test_loader
         self.train_loader = train_loader
         assert grad_mode in ['first_order', 'zeroth_order_forward-mode_AD', 'zeroth_order_rge', 'zeroth_order_cge', 'zeroth_order_forward-mode_AD_sim']
