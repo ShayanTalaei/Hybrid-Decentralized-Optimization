@@ -36,7 +36,7 @@ command:
   - "--n_embd"
   - "1"
   - "--dropout"
-  - "0"
+  - "0.1"
   - "--n_head"
   - "1"
   - "--n_layer"
