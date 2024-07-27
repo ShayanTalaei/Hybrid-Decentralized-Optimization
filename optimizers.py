@@ -44,7 +44,6 @@ class ZAD(Optimizer):
         defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode,
                         v_step=v_step, weight_decay=weight_decay)
         super(ZAD, self).__init__(params, defaults)
-        print(params)
         self.lr = lr
         self.random_vec = random_vec
         self.f = None
@@ -53,6 +52,7 @@ class ZAD(Optimizer):
         self.grad = [torch.zeros(p.size()).to(self.device) for group in params for p in group['params']]
         # self.params = [p for group in self.param_groups for p in group['params']]
         self.params = [p for group in params for p in group['params']]
+        print(self.params)
         # self.weight_decays = [weight_decay if 'weight_decay' not in group else group['weight_decay'] for group in self.param_groups for p in group['params']]
         self.weight_decays = [weight_decay if 'weight_decay' not in group else group['weight_decay'] for group in params for p in group['params']]
         self.params_data = [p.data for p in self.params]
