@@ -43,14 +43,18 @@ class ZAD(Optimizer):
         self.device = device
         defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode,
                         v_step=v_step, weight_decay=weight_decay)
+        super(ZAD, self).__init__(list(params), defaults)
+
         self.lr = lr
         self.random_vec = random_vec
         self.f = None
         self.momentum = momentum
         # self.grad = [torch.zeros(p.size()).to(self.device) for group in self.param_groups for p in group['params']]
-        self.grad = [torch.zeros(p.size()).to(self.device) for group in list(params) for p in group['params']]
+        # self.grad = [torch.zeros(p.size()).to(self.device) for group in list(params) for p in group['params']]
+        self.grad = [torch.zeros(p.size()).to(self.device) for group in params for p in group['params']]
         # self.params = [p for group in self.param_groups for p in group['params']]
-        self.params = [p for group in list(params) for p in group['params']]
+        # self.params = [p for group in list(params) for p in group['params']]
+        self.params = [p for group in params for p in group['params']]
         # self.weight_decays = [weight_decay if 'weight_decay' not in group else group['weight_decay'] for group in self.param_groups for p in group['params']]
         self.weight_decays = [weight_decay if 'weight_decay' not in group else group['weight_decay'] for group in params for p in group['params']]
         self.params_data = [p.data for p in self.params]
@@ -68,7 +72,6 @@ class ZAD(Optimizer):
         #             p_tmp = torch.zeros_like(p_tmp)
         #             p_tmp[i] = 1
         #             self.params_mask.append(p_tmp.reshape(p.size()).to(self.device))
-        super(ZAD, self).__init__(params, defaults)
 
 
 
