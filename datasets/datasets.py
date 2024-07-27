@@ -57,7 +57,7 @@ def get_model_shape(dataset_name):
     return INPUT_DIM[dataset_name], NUM_CLASSES[dataset_name]
 
 
-def get_dataset(dataset_name, path=None, max_length=512, **kwargs):
+def get_dataset(dataset_name, path=None, max_length=512, is_vtransformer=False, **kwargs):
     args = {}
     if dataset_name == "mnist":
         transform_mnist = v2.Compose([
@@ -76,13 +76,21 @@ def get_dataset(dataset_name, path=None, max_length=512, **kwargs):
         dataset = FashionMNIST(path + "data", train=True, download=True, transform=transform_fmnist)
         test_dataset = FashionMNIST(path + "data", train=False, download=True, transform=transform_fmnist)
     elif dataset_name == "cifar10":
-        transform_cifar = v2.Compose([
-            v2.RandomCrop(32, padding=4),
-            v2.RandomHorizontalFlip(),
-            v2.ToImage(),
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ])
+        if not is_vtransformer:
+            transform_cifar = v2.Compose([
+                v2.RandomCrop(32, padding=4),
+                v2.RandomHorizontalFlip(),
+                v2.ToImage(),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
+        else:
+            transform_cifar = v2.Compose([
+                v2.RandomCrop(32, padding=4),
+                v2.RandomHorizontalFlip(),
+                v2.ToImage(),
+                v2.ToDtype(torch.int16, scale=True),
+            ])
         dataset = CIFAR10(path + "data", train=True, download=True, transform=transform_cifar)
         test_dataset = CIFAR10(path + "data", train=False, download=True, transform=transform_cifar)
     elif dataset_name == "cifar100":

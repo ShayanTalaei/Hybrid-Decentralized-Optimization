@@ -55,7 +55,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
     rank = comm.Get_rank()
     size = comm.Get_size()
     is_first = True if rank < fn else False
-    train_set, test_set, input_shape, n_class, args = get_dataset(dataset_name, path=path)
+    is_vtransformer = True if model_name == 'vtransformer' else False
+    train_set, test_set, input_shape, n_class, args = get_dataset(dataset_name, path=path, is_vtransformer=is_vtransformer)
     if 'vocab_size' in args:
         vars(config)['vocab_size'] = args['vocab_size']
     lr = lr1 if is_first else lr0

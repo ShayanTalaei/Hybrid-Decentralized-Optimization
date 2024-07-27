@@ -25,7 +25,7 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
         vars(config)['device'] = device
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = torch.prod(torch.tensor(input_shape)).item()
-        # vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
+        vars(config)['vocab_size'] = 256
 
         model = TransformerModel(config, is_v=True)
     else:
@@ -51,7 +51,7 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
         vars(config)['device'] = kwargs['device']
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = torch.prod(torch.tensor(input_shape)).item()
-        # vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
+        vars(config)['vocab_size'] = 256
 
         model = TransformerModel(config, is_v=True)
     else:

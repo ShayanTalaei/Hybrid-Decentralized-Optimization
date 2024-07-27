@@ -121,28 +121,35 @@ class GPTBaseClassification(nn.Module):
 
     def __init__(self, config, is_v=False):
         super().__init__()
-        if not is_v:
-            assert config.vocab_size is not None
+        # if not is_v:
+        assert config.vocab_size is not None
         assert config.sequence_length is not None
         self.config = config
         # self.tokenizer = tiktoken.get_encoding("gpt2")
         self.is_v = is_v
 
-        if not is_v:
-            self.transformer = nn.ModuleDict(dict(
-                wte = nn.Embedding(config.vocab_size, config.n_embd),
-                wpe = nn.Embedding(config.sequence_length, config.n_embd),
-                drop = nn.Dropout(config.dropout),
-                h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
-                ln_f = LayerNorm(config.n_embd, bias=config.bias),
-            ))
-        else:
-            self.transformer = nn.ModuleDict(dict(
-                wpe=nn.Embedding(config.sequence_length, config.n_embd),
-                drop=nn.Dropout(config.dropout),
-                h=nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
-                ln_f=LayerNorm(config.n_embd, bias=config.bias),
-            ))
+        # if not is_v:
+        #     self.transformer = nn.ModuleDict(dict(
+        #         wte = nn.Embedding(config.vocab_size, config.n_embd),
+        #         wpe = nn.Embedding(config.sequence_length, config.n_embd),
+        #         drop = nn.Dropout(config.dropout),
+        #         h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
+        #         ln_f = LayerNorm(config.n_embd, bias=config.bias),
+        #     ))
+        # else:
+        #     self.transformer = nn.ModuleDict(dict(
+        #         wpe=nn.Embedding(config.sequence_length, config.n_embd),
+        #         drop=nn.Dropout(config.dropout),
+        #         h=nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
+        #         ln_f=LayerNorm(config.n_embd, bias=config.bias),
+        #     ))
+        self.transformer = nn.ModuleDict(dict(
+            wte=nn.Embedding(config.vocab_size, config.n_embd),
+            wpe=nn.Embedding(config.sequence_length, config.n_embd),
+            drop=nn.Dropout(config.dropout),
+            h=nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
+            ln_f=LayerNorm(config.n_embd, bias=config.bias),
+        ))
 
         # self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         self.lm_head = nn.Linear(config.n_embd * config.sequence_length, config.n_class, bias=True)
@@ -150,9 +157,9 @@ class GPTBaseClassification(nn.Module):
         # "UserWarning: functional_call was passed multiple values for tied weights.
         # This behavior is deprecated and will be an error in future versions"
         # not 100% sure what this is, so far seems to be harmless. TODO investigate
-        if not is_v:
-            # self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
-            self.transformer.wte.weight = nn.Linear(config.n_embd, config.vocab_size, bias=False).weight
+        # if not is_v:
+        # self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
+        self.transformer.wte.weight = nn.Linear(config.n_embd, config.vocab_size, bias=False).weight
 
         # init all weights
         self.apply(self._init_weights)
@@ -194,13 +201,15 @@ class GPTBaseClassification(nn.Module):
 
         # forward the GPT model itself
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
-        if not self.is_v:
-            tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
-            x = self.transformer.drop(tok_emb + pos_emb)
-        else:
-            # make pos_emb as shape (b, t, n_embd)
-            pos_emb = pos_emb.repeat(b, 1, 1)
-            x = self.transformer.drop(pos_emb)
+        # if not self.is_v:
+        #     tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
+        #     x = self.transformer.drop(tok_emb + pos_emb)
+        # else:
+        #     # make pos_emb as shape (b, t, n_embd)
+        #     pos_emb = pos_emb.repeat(b, 1, 1)
+        #     x = self.transformer.drop(pos_emb)
+        tok_emb = self.transformer.wte(idx)  # token embeddings of shape (b, t, n_embd)
+        x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
