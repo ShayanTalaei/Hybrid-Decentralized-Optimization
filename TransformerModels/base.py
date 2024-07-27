@@ -188,7 +188,7 @@ class GPTBaseClassification(nn.Module):
     def forward(self, idx, targets=None, get_logits=True):
         device = idx.device
         b, t = idx.size()
-        print(f"idx.size(): {idx.size()}")
+        # print(f"idx.size(): {idx.size()}")
         assert t <= self.config.sequence_length, f"Cannot forward sequence of length {t}, block size is only {self.config.sequence_length}"
         pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
 
@@ -215,7 +215,7 @@ class GPTBaseClassification(nn.Module):
         #     loss = None
         # logits = logits if get_logits else None
         # return {'logits': logits, 'loss': loss}
-        print(f"x.size(): {x.size()}")
+        # print(f"x.size(): {x.size()}")
         return self.lm_head(x.reshape(x.size(0), -1))
 
     # def crop_sequence_length(self, sequence_length):
