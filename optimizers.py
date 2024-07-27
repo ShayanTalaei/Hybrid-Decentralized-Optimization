@@ -43,8 +43,6 @@ class ZAD(Optimizer):
         self.device = device
         defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode,
                         v_step=v_step, weight_decay=weight_decay)
-        super(ZAD, self).__init__(params, defaults)
-        print(list(params))
         self.lr = lr
         self.random_vec = random_vec
         self.f = None
@@ -70,6 +68,8 @@ class ZAD(Optimizer):
         #             p_tmp = torch.zeros_like(p_tmp)
         #             p_tmp[i] = 1
         #             self.params_mask.append(p_tmp.reshape(p.size()).to(self.device))
+        super(ZAD, self).__init__(params, defaults)
+
 
 
     def set_f(self, model, data, target, criterion):
