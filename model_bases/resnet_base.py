@@ -108,6 +108,7 @@ class ResNetCifar(EnhancedModel):
         self.layer3 = self._make_layer(self.layer_gates[2], block, 64, layers[2], stride=2)
         self.avgpool = nn.AvgPool2d(8, stride=1)
         self.fc = nn.Linear(64 * block.expansion, num_classes)
+        self.to(self.device)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
