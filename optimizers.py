@@ -43,9 +43,9 @@ class ZAD(Optimizer):
         self.device = device
         defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode,
                         v_step=v_step, weight_decay=weight_decay)
+        print(list(params))
         super(ZAD, self).__init__(params, defaults)
         self.lr = lr
-        print(list(params))
         self.random_vec = random_vec
         self.f = None
         self.momentum = momentum
