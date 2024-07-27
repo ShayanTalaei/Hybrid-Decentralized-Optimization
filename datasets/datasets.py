@@ -89,7 +89,7 @@ def get_dataset(dataset_name, path=None, max_length=512, is_vtransformer=False, 
                 v2.RandomCrop(32, padding=4),
                 v2.RandomHorizontalFlip(),
                 v2.ToImage(),
-                v2.ToDtype(int),
+                v2.ToDtype(torch.int),
             ])
         dataset = CIFAR10(path + "data", train=True, download=True, transform=transform_cifar)
         test_dataset = CIFAR10(path + "data", train=False, download=True, transform=transform_cifar)
