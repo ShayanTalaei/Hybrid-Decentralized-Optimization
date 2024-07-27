@@ -89,6 +89,7 @@ class BasicBlock(nn.Module):
 class ResNetCifar(EnhancedModel):
 
     def __init__(self, block, layers, num_classes=NUM_CLASSES):
+        super().__init__()
         self.nlayers = 0
         # Each layer manages its own gates
         self.layer_gates = []
@@ -99,7 +100,7 @@ class ResNetCifar(EnhancedModel):
                 self.layer_gates[layer].append([True, True])
 
         self.inplanes = 16  # 64
-        super(ResNetCifar, self).__init__()
+        # super(ResNetCifar, self).__init__()
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
