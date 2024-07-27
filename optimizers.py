@@ -179,12 +179,12 @@ class ZAD(Optimizer):
 
         elif self.grad_mode == 'zeroth_order_forward-mode_AD_sim':
             self.zero_grad()
-            loss = criterion(model(data), target)
+            loss_target = criterion(model(data), target)
             # weight decay
             norms = torch._foreach_norm(self.params_data)
             torch._foreach_pow_(norms, 2)
             torch._foreach_mul_(norms, self.weight_decays)
-            loss += torch.sum(torch.tensor(norms))
+            loss = torch.sum(torch.tensor(norms)) + loss_target
             loss.backward()
             with torch.no_grad():
                 torch._foreach_mul_(self.grad, self.momentum)
@@ -204,7 +204,7 @@ class ZAD(Optimizer):
                     # y_vectors = torch.randn(self.random_vec, *grad.shape, device=self.device)  # , device=self.device
                     # efficiency = torch.matmul(y_vectors, grad)
                     # grad = torch.mean(efficiency.unsqueeze(1) * y_vectors, dim=0)
-                return loss.item()
+                return loss_target.item()
 
 
 
