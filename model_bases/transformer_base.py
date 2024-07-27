@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-
+from model_bases.base import EnhancedModel
 
 
 class LayerNorm(nn.Module):
@@ -338,3 +338,83 @@ class GPTBaseClassification(nn.Module):
     #     idx = torch.tensor(self.tokenizer.encode(in_str, allowed_special={"<|endoftext|>"})).view(1,-1).to(self.lm_head.weight.device)
     #     out_idx = self.generate(idx, max_new_tokens, temperature, top_k).view(-1).to('cpu').numpy()
     #     return self.tokenizer.decode(out_idx)
+
+
+class TransformerModel(EnhancedModel):
+
+    def __init__(self, config, is_v=False):
+        super().__init__(**vars(config))
+        self.model = GPTBaseClassification(config, is_v=is_v)
+        self.model.to(self.device)
+
+    def forward(self, x):
+        return self.model(torch.reshape(x, (x.shape[0], -1)))
+
+    def get_parameter_group_specs(self):
+        """
+        This long function is unfortunately doing something very simple and is being very defensive:
+        We are separating out all parameters of the model into two buckets: those that will experience
+        weight decay for regularization and those that won't (biases, and layernorm/embedding weights).
+        We are then returning the PyTorch optimizer object.
+        """
+
+        # separate out all parameters to those that will and won't experience regularizing weight decay
+        decay = set()
+        no_decay = set()
+        whitelist_weight_modules = (torch.nn.Linear,)
+        # need to do import here to avoid circular import (since llama imports from base here)
+
+        for mn, m in self.named_modules():
+            for pn, p in m.named_parameters():
+                fpn = "%s.%s" % (mn, pn) if mn else pn  # full param name
+                # random note: because named_modules and named_parameters are recursive
+                # we will see the same tensors p many many times. but doing it this way
+                # allows us to know which parent module any tensor p belongs to...
+                if pn.endswith("bias"):
+                    # all biases will not be decayed
+                    no_decay.add(fpn)
+                elif pn.endswith("weight") and isinstance(m, whitelist_weight_modules):
+                    # weights of whitelist modules will be weight decayed
+                    decay.add(fpn)
+                elif pn.endswith("weight") and isinstance(m, BLACKLIST_WEIGHT_MODULES):
+                    # weights of blacklist modules will NOT be weight decayed
+                    no_decay.add(fpn)
+
+        # subtle: 'transformer.wte.weight' and 'lm_head.weight' are tied, so they
+        # will appear in the no_decay and decay sets respectively after the above.
+        # In addition, because named_parameters() doesn't return duplicates, it
+        # will only return the first occurence, key'd by 'transformer.wte.weight', below.
+        # so let's manually remove 'lm_head.weight' from decay set. This will include
+        # this tensor into optimization via transformer.wte.weight only, and not decayed.
+        # decay.remove("lm_head.weight")
+
+        # validate that we considered every parameter
+        param_dict = {pn: p for pn, p in self.named_parameters()}
+        inter_params = decay & no_decay
+        union_params = decay | no_decay
+        assert (
+                len(inter_params) == 0
+        ), "parameters %s made it into both decay/no_decay sets!" % (str(inter_params),)
+        assert (
+                len(param_dict.keys() - union_params) == 0
+        ), "parameters %s were not separated into either decay/no_decay set!" % (
+            str(param_dict.keys() - union_params),
+        )
+        decay_opt = []
+        no_decay_opt = []
+        decay_opt_names = []
+        no_decay_opt_names = []
+        for k, v in self.named_parameters():
+            if k in decay:
+                decay_opt.append(v)
+                decay_opt_names.append(k)
+            elif k in no_decay:
+                no_decay_opt.append(v)
+                no_decay_opt_names.append(k)
+            else:
+                raise ValueError("error, parameter not separated into either decay/no_decay set")
+        # create the pytorch optimizer object
+        return [
+            {"params": decay_opt},
+            {"params": no_decay_opt, "weight_decay": 0.0},
+        ], [decay_opt_names, no_decay_opt_names]
