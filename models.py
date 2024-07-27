@@ -25,9 +25,9 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
         vars(config)['device'] = device
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = torch.prod(torch.tensor(input_shape)).item()
-        vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
+        # vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
 
-        model = TransformerModel(config)
+        model = TransformerModel(config, is_v=True)
     else:
         model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, device=device)
     state_dict = model.state_dict()
@@ -51,9 +51,9 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
         vars(config)['device'] = kwargs['device']
         vars(config)['n_class'] = n_class
         vars(config)['sequence_length'] = torch.prod(torch.tensor(input_shape)).item()
-        vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
+        # vars(config)['vocab_size'] = torch.prod(torch.tensor(input_shape)).item()
 
-        model = TransformerModel(config)
+        model = TransformerModel(config, is_v=True)
     else:
         model = CustomNN(input_shape, hidden_layers, conv_number=conv_number, out_channels=out_channels, **kwargs)
 
@@ -211,9 +211,9 @@ BLACKLIST_WEIGHT_MODULES = (
 
 class TransformerModel(EnhancedModel):
 
-    def __init__(self, config):
+    def __init__(self, config, is_v=False):
         super().__init__(**vars(config))
-        self.model = GPTBaseClassification(config)
+        self.model = GPTBaseClassification(config, is_v=is_v)
         self.model.to(self.device)
 
     def forward(self, x):
