@@ -7,7 +7,7 @@ from torchvision.models import ResNet101_Weights, ResNet50_Weights, ResNet18_Wei
 
 from model_bases.base import CustomNN
 from datasets.datasets import get_model_shape
-from model_bases.resnet_base import ResNetCifar, resnet20_cifar
+from model_bases.resnet_base import resnet20_cifar
 from model_bases.transformer_base import TransformerModel
 
 
@@ -18,6 +18,8 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
     if model_name == 'resnet':
         # model = ResNetCifar(n_class, freeze=freeze_model, device=device)
         model = resnet20_cifar()
+        print(model.parameters())
+        print(model.state_dict())
     elif model_name == 'transformer':
         vars(config)['device'] = device
         vars(config)['n_class'] = n_class
