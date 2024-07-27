@@ -40,6 +40,7 @@ class ZAD(Optimizer):
 
     def __init__(self, params, lr=0.001, random_vec=10, momentum=0.9, names=None, grad_mode='zeroth_order_rge',
                  v_step=10.0, device='cpu', weight_decay=0.0):
+        print(list(params))
         self.device = device
         defaults = dict(lr=lr, random_vec=random_vec, momentum=momentum, names=names, grad_mode=grad_mode,
                         v_step=v_step, weight_decay=weight_decay)
