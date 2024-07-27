@@ -34,7 +34,15 @@ command:
   - "--fn"
   - "0"
   - "--n_embd"
-  - "2"
+  - "1"
+  - "--dropout"
+  - "0"
+  - "--n_head"
+  - "1"
+  - "--n_layer"
+  - "1"
+  - "--n_embd"
+  - "1"
   - ${args}
 
   
