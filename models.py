@@ -18,8 +18,6 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
     if model_name == 'resnet':
         # model = ResNetCifar(n_class, freeze=freeze_model, device=device)
         model = resnet20_cifar()
-        print(model.parameters())
-        print(model.state_dict())
     elif model_name == 'transformer':
         vars(config)['device'] = device
         vars(config)['n_class'] = n_class
