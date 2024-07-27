@@ -9,7 +9,7 @@ parameters:
   lr0:
     min: 0.00001
     max: 0.1
-  momentum:
+  momentum0:
     min: 0.0
     max: 0.95
   rv:

@@ -9,7 +9,7 @@ parameters:
   lr1:
     min: 0.00001
     max: 0.1
-  momentum:
+  momentum1:
     min: 0.0
     max: 0.95
   f_batch_size:
