@@ -198,6 +198,8 @@ class GPTBaseClassification(nn.Module):
             tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
             x = self.transformer.drop(tok_emb + pos_emb)
         else:
+            # make pos_emb as shape (b, t, n_embd)
+            pos_emb = pos_emb.repeat(b, 1, 1)
             x = self.transformer.drop(pos_emb)
         for block in self.transformer.h:
             x = block(x)
