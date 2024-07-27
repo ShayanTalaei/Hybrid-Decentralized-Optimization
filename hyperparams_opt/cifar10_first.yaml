@@ -7,13 +7,13 @@ metric:
   name: eval/loss
 parameters:
   lr1:
-    min: 0.00001
+    min: 0.001
     max: 0.1
   momentum1:
     min: 0.0
     max: 0.95
   f_batch_size:
-    values: [128, 256, 1024, 2048]
+    values: [128, 256, 512, 1024]
 
 
 command:
