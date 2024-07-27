@@ -48,7 +48,7 @@ class ZAD(Optimizer):
         self.f = None
         self.momentum = momentum
         # self.grad = [torch.zeros(p.size()).to(self.device) for group in self.param_groups for p in group['params']]
-        print(params)
+        print(list(params))
 
         self.grad = [torch.zeros(p.size()).to(self.device) for group in params for p in group['params']]
         # self.params = [p for group in self.param_groups for p in group['params']]
