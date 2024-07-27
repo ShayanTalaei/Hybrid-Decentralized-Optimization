@@ -89,6 +89,7 @@ class EnhancedModel(nn.Module):
                 xb, yb = xb.to(self.device), yb.to(self.device)
                 count += 1
                 outputs = model(xb)
+                print(outputs.size())
                 loss = criterion(outputs, yb).item()
                 data_count += xb.shape[0]
                 total_loss += loss
