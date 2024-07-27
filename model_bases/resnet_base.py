@@ -118,6 +118,7 @@ class ResNetCifar(EnhancedModel):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+        print('ResNetCifar model created')
 
     def _make_layer(self, layer_gates, block, planes, blocks, stride=1):
         downsample = None
