@@ -45,6 +45,7 @@ class ZAD(Optimizer):
                         v_step=v_step, weight_decay=weight_decay)
         params = list(params)
         super(ZAD, self).__init__(list(params), defaults)
+        print(params[0])
 
         self.lr = lr
         self.random_vec = random_vec
