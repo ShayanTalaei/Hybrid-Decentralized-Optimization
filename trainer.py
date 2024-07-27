@@ -51,6 +51,9 @@ class HybridSGDTrainer:
             params, names = self.model.get_parameter_group_specs()
             if self.grad_mode.startswith('zeroth_order'):
                 opt_args['names'] = names[0] + names[1]
+        elif model_name == 'resnet':
+            params = [v for _, v in self.model.named_parameters()]
+            params = [{'params': params}]
         else:
             params = self.model.parameters()
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(params, **opt_args)
