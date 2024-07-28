@@ -7,7 +7,7 @@ metric:
   name: eval/loss
 parameters:
   lr1:
-    min: 0.001
+    min: 0.0001
     max: 0.1
   momentum1:
     min: 0.0
@@ -27,6 +27,8 @@ command:
   - "--scheduler"
   - "--fn"
   - "1"
+  - "--dropout"
+  - "0.0"
   - ${args}
 
   
