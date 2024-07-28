@@ -33,6 +33,8 @@ command:
   - "--scheduler"
   - "--fn"
   - "0"
+  - "--weight_decay"
+  - "0.0"
   - ${args}
 
   
