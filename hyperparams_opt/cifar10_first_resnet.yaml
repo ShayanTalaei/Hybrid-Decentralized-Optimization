@@ -27,7 +27,7 @@ command:
   - "--scheduler"
   - "--fn"
   - "1"
-  - "--dropout"
+  - "--weight_decay"
   - "0.0"
   - ${args}
 
