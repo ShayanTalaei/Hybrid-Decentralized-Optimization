@@ -7,7 +7,7 @@ metric:
   name: eval/loss
 parameters:
   lr0:
-    min: 0.001
+    min: 0.0001
     max: 0.1
   momentum0:
     min: 0.0
