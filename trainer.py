@@ -219,7 +219,7 @@ class HybridSGDTrainer:
                     self.evaluate()
                     if self.dataset_name == 'bracket' and self.history[-1]['eval/accuracy'] < 0.6 and self.steps > 200:
                         return self.history
-                    if self.dataset_name == 'cifar10' and self.history[-1]['eval/accuracy'] < 0.2 and self.steps > 150:
+                    if self.dataset_name == 'cifar10' and self.history[-1]['eval/accuracy'] < 0.2 and self.steps > 200:
                         return self.history
                 loss = self.take_step(data, target)
                 # step_loss += loss
