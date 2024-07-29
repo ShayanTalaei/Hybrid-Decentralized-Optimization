@@ -16,11 +16,12 @@ class HybridSGDTrainer:
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
                  momentum0=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
                  log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu', config=None,
-                 momentum1=0.0, concurrency=1):
+                 momentum1=0.0, concurrency=1, exchange_period=0):
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
         self.comm = comm
+        self.exchange_period = exchange_period
         self.fn = fn
         self.lr = lr
         self.concurrency = concurrency
@@ -150,7 +151,7 @@ class HybridSGDTrainer:
                     # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     self.training_loss = loss
                     return self.history
-                if self.steps < self.warmup_steps:
+                if self.steps < self.warmup_steps or (self.exchange_period != 0 and self.steps // self.exchange_period % 2 == 0):
                     # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                     self.training_loss = loss
                     self.steps += 1
