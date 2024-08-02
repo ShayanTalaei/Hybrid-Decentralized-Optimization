@@ -7,7 +7,7 @@ metric:
   name: eval/loss
 parameters:
   lr0:
-    min: 0.00001
+    min: 0.001
     max: 0.1
   momentum0:
     min: 0.0
@@ -17,7 +17,7 @@ parameters:
   z_batch_size:
     values: [128, 256, 512, 1024]
   v_step:
-    values: [0.0000001, 0.000001, 0.00001]
+    values: [0.00001, 0.0001, 0.001]
 
 
 command:
