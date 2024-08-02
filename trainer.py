@@ -230,6 +230,7 @@ class HybridSGDTrainer:
                 # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.training_loss = loss
                 if loss is None or loss is torch.nan or loss > 10 ** 6:  # Diverged!
+                    print("diverged")
                     # step_loss /= len(self.train_loader)
                     # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
                     return self.history
