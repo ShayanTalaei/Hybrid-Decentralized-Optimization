@@ -38,17 +38,22 @@ import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
 
-
 __all__ = ['resnet20_cifar', 'resnet32_cifar', 'resnet44_cifar', 'resnet56_cifar']
+
+from torchvision import models
+
+from torchvision.models import ResNet18_Weights
 
 from model_bases.base import EnhancedModel
 
 NUM_CLASSES = 10
 
+
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
+
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -152,54 +157,55 @@ class ResNetCifar(EnhancedModel):
         return x
 
 
+class ResNetModel(EnhancedModel):
+    """
+    Simple feedforward neural network.
+    """
 
-# class ResNetModel(EnhancedModel):
-#     """
-#     Simple feedforward neural network.
-#     """
-#
-#     def __init__(self, num_classes, freeze=False, **kwargs):
-#         """
-#         Initialize the resnet model.
-#         :param num_classes: The number of classes.
-#         :param grad_mode: The grad mode.
-#         :param criterion: The criterion.
-#         :param freeze: Whether to freeze the model except the last layer.
-#         :param kwargs: Additional arguments.
-#         """
-#         super().__init__(**kwargs)
-#         self.weight = ResNet18_Weights.DEFAULT
-#         self.model = models.resnet18(weights=self.weight)
-#         self.preprocess = self.weight.transforms()
-#         if freeze:
-#             for param in self.model.parameters():
-#                 param.requires_grad = False
-#         num_ftrs = self.model.fc.in_features
-#         self.model.fc = nn.Linear(num_ftrs, num_classes)
-#         self.to(self.device)
-#
-#     def forward(self, x):
-#         """
-#         Forward pass.
-#         :param x: The input.
-#         :return: The output.
-#         """
-#         x = self.preprocess(x)
-#         return self.model(x)
+    def __init__(self, num_classes, freeze=False, **kwargs):
+        """
+        Initialize the resnet model.
+        :param num_classes: The number of classes.
+        :param grad_mode: The grad mode.
+        :param criterion: The criterion.
+        :param freeze: Whether to freeze the model except the last layer.
+        :param kwargs: Additional arguments.
+        """
+        super().__init__(**kwargs)
+        self.weight = ResNet18_Weights.DEFAULT
+        self.model = models.resnet18(weights=self.weight)
+        self.preprocess = self.weight.transforms()
+        if freeze:
+            for param in self.model.parameters():
+                param.requires_grad = False
+        num_ftrs = self.model.fc.in_features
+        self.model.fc = nn.Linear(num_ftrs, num_classes)
+        self.to(self.device)
 
+    def forward(self, x):
+        """
+        Forward pass.
+        :param x: The input.
+        :return: The output.
+        """
+        x = self.preprocess(x)
+        return self.model(x)
 
 
 def resnet20_cifar(**kwargs):
     model = ResNetCifar(BasicBlock, [3, 3, 3], **kwargs)
     return model
 
+
 def resnet32_cifar(**kwargs):
     model = ResNetCifar(BasicBlock, [5, 5, 5], **kwargs)
     return model
 
+
 def resnet44_cifar(**kwargs):
     model = ResNetCifar(BasicBlock, [7, 7, 7], **kwargs)
     return model
+
 
 def resnet56_cifar(**kwargs):
     model = ResNetCifar(BasicBlock, [9, 9, 9], **kwargs)

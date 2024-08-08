@@ -18,13 +18,13 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=0, type=int, help="The random seed to use for training.")
     parser.add_argument("--dataset", default="bracket", help="The dataset to use for training and testing.")
     parser.add_argument("--hidden", default=128, type=int, help="The number of hidden units in the model.")
-    parser.add_argument("--num_layer", default=2, type=int, help="The number of layers in the model.")
+    parser.add_argument("--num_layer", default=2, type=int, help="The number of layers in the cnn model.")
     parser.add_argument("--conv_number", default=2, type=int, help="The number of convolutional layers in the model.")
-    parser.add_argument("--f_batch_size", default=25, type=int, help="The first order optimizer batch size.")
+    parser.add_argument("--f_batch_size", default=20, type=int, help="The first order optimizer batch size.")
     parser.add_argument("--z_batch_size", default=100, type=int, help="The zero order optimizer batch size.")
     parser.add_argument("--plot", action="store_true", help="Whether to plot the training and validation curves.")
-    parser.add_argument("--lr0", default=0.0001, type=float, help="The learning rate for zero-order optimizers.")
-    parser.add_argument("--lr1", default=0.0001, type=float, help="The learning rate for first-order optimizers.")
+    parser.add_argument("--lr0", default=0.01, type=float, help="The learning rate for zero-order optimizers.")
+    parser.add_argument("--lr1", default=0.001, type=float, help="The learning rate for first-order optimizers.")
     parser.add_argument("--rv", default=200, type=int, help="The number of random vectors to use for zeroth-order "
                                                             "optimizers.")
     parser.add_argument("--steps", default=600, type=int, help="The learning steps for the optimizers.")
@@ -38,29 +38,32 @@ if __name__ == "__main__":
                                                           "used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
     parser.add_argument("--scheduler", action="store_true", help="Whether to use a learning rate scheduler.")
-    parser.add_argument("--scheduler_warmup_steps", default=100, type=int, help="The number of warmup steps for the "
+    parser.add_argument("--scheduler_warmup_steps", default=50, type=int, help="The number of warmup steps for the "
                                                                               "scheduler.")
-    parser.add_argument("--warmup_steps", default=100, type=int, help="The number of warmup steps before starting the "
+    parser.add_argument("--warmup_steps", default=50, type=int, help="The number of warmup steps before starting the "
                                                                     "communication.")
     parser.add_argument("--momentum0", default=0.0, type=float, help="The momentum parameter for the zeroth optimizer.")
     parser.add_argument("--momentum1", default=0.0, type=float, help="The momentum parameter for the first optimizer.")
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
     parser.add_argument("--z_grad", default="zeroth_order_rge", help="The gradient mode for the zeroth-order.")
-    parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
+    # parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
+    parser.add_argument("--v_step", default=1e-6, type=float, help="The step size for the zeroth-order optimizer.")
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
     parser.add_argument("--mpi_cuda_aware", action="store_true", help="Whether MPI is CUDA aware.")
     parser.add_argument('--weight_decay', default=0.1,
-                        type=float)  # I recommend you keep this value, else instabilities might arise
+                        type=float)
+
     # transformer arguments
-    parser.add_argument('--dropout', default=0.1, type=float)  # keep to 0 unless in low data regime (e.g. wikitext)
+    parser.add_argument('--dropout', default=0.1, type=float)
     parser.add_argument('--n_head', default=2, type=int)
-    parser.add_argument('--n_layer', default=2, type=int)  # depth in (att + ff) blocks
-    parser.add_argument('--n_embd', default=4, type=int)  # hidden size ...
+    parser.add_argument('--n_layer', default=2, type=int, help='number of layers in the transformer')
+    parser.add_argument('--n_embd', default=4, type=int)
     parser.add_argument('--bias', default=False, type=bool)
 
-    parser.add_argument('--concurrency', default=1, type=int)
+    parser.add_argument('--concurrency', default=100, type=int)
     parser.add_argument("--exchange_period", default=0, type=int, help="The exchange period.")
+    parser.add_argument("--wandb_group", default=None, help="The wandb group.")
 
     # mpi4py.rc.threads = False
     # MPI.Finalize()
@@ -138,7 +141,7 @@ if __name__ == "__main__":
     print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size(), 'device:', device)
     if rank == 0:
         wandb.login()
-        wandb.init(project="HDO", group=args.dataset + "_" + args.model, config=vars(args))
+        wandb.init(project="HDO", group=args.wandb_group, config=vars(args))
         print(f"Learning rates: Zero-order: {args.lr0}, First-order: {args.lr1}")
         print(f"Steps: {args.steps}")
         print(f"Number of layer: {args.num_layer}")
@@ -168,6 +171,7 @@ if __name__ == "__main__":
         print(f"File name: {args.file_name}")
         print(f"Path: {args.path}")
         print(f"Is CUDA aware: {args.mpi_cuda_aware}")
+        print(f"Wandb group: {args.wandb_group}")
 
     comm.Barrier()
 
