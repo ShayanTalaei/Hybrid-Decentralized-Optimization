@@ -64,6 +64,7 @@ if __name__ == "__main__":
     parser.add_argument('--concurrency', default=100, type=int)
     parser.add_argument("--exchange_period", default=0, type=int, help="The exchange period.")
     parser.add_argument("--wandb_group", default=None, help="The wandb group.")
+    parser.add_argument("--verbose", action="store_true", help="Whether to print verbose logs.")
 
     # mpi4py.rc.threads = False
     # MPI.Finalize()
@@ -114,11 +115,12 @@ if __name__ == "__main__":
     #     # assert np.all(buf == 42)
 
     # Parse the arguments
+    args = parser.parse_args()
     rank = mpi4py.MPI.COMM_WORLD.Get_rank()
     comm = MPI.COMM_WORLD
-    print('start rank:', rank)
+    if args.verbose:
+        print('start rank:', rank)
     comm.Barrier()
-    args = parser.parse_args()
     torch.backends.cudnn.deterministic = True
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -138,7 +140,8 @@ if __name__ == "__main__":
         # device = gpu_list[rank % len(gpu_list)]
 
     # Convert string arguments to appropriate data types
-    print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size(), 'device:', device)
+    if args.verbose:
+        print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size(), 'device:', device)
     if rank == 0:
         wandb.login()
         wandb.init(project="HDO", group=args.wandb_group, config=vars(args))
@@ -207,7 +210,8 @@ if __name__ == "__main__":
                concurrency=args.concurrency,
                exchange_period=args.exchange_period,
                device=device,
-               config=args
+               config=args,
+               verbose=args.verbose
                )
 
     if rank == 0:

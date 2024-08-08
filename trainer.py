@@ -16,7 +16,8 @@ class HybridSGDTrainer:
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
                  momentum0=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
                  log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu', config=None,
-                 momentum1=0.0, concurrency=1, exchange_period=0):
+                 momentum1=0.0, concurrency=1, exchange_period=0, verbose=True):
+        self.verbose = verbose
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
@@ -245,7 +246,8 @@ class HybridSGDTrainer:
         self.model.eval()
         for turn in range(self.size // self.concurrency + 1):
             if self.rank // self.concurrency == turn:
-                print(f"Rank {self.rank} steps: {self.steps} evaluate")
+                if self.verbose:
+                    print(f"Rank {self.rank} steps: {self.steps} evaluate")
                 result = self.model.evaluate(self.test_loader, self.criterion)
                 # empty cache
                 # torch.cuda.empty_cache()
@@ -253,13 +255,14 @@ class HybridSGDTrainer:
         validation_loss = result['loss']
         validation_accuracy = result['accuracy']
         training_loss = self.training_loss if self.training_loss else 0
-        print(f"Rank {self.rank}: " +
-            "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
-            .format(self.steps,
-                    training_loss,
-                    validation_loss,
-                    validation_accuracy)
-        )
+        if self.verbose:
+            print(f"Rank {self.rank}: " +
+                "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
+                .format(self.steps,
+                        training_loss,
+                        validation_loss,
+                        validation_accuracy)
+            )
         validation_loss_cum = self.comm.reduce(validation_loss, op=MPI.SUM, root=0)
         validation_accuracy_cum = self.comm.reduce(validation_accuracy, op=MPI.SUM, root=0)
         training_loss_cum = self.comm.reduce(training_loss, op=MPI.SUM, root=0)
@@ -272,6 +275,13 @@ class HybridSGDTrainer:
                            'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
             wandb.log(result_dict)
             self.history.append(result_dict)
+            print(f"Rank {self.rank}: Aggregated results: " +
+                "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
+                .format(self.steps,
+                        training_loss,
+                        validation_loss,
+                        validation_accuracy)
+            )
 
         self.model.train()
 

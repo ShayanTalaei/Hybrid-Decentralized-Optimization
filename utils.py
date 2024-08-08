@@ -49,7 +49,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
         file_name=None, model_name=None, freeze_model=False, plot=False, random_vecs=200,
         num_workers=2, momentum0=0.0, momentum1=0.0, f_grad='first_order', z_grad='zeroth_order_cge', scheduler=False,
         scheduler_warmup_steps=0, warmup_steps=0, v_step=10.0, out_channels=8, f_batch_size=100, z_batch_size=100,
-        is_cuda_aware=False, concurrency=1, device='cpu', config=None, exchange_period=0):
+        is_cuda_aware=False, concurrency=1, device='cpu', config=None, exchange_period=0, verbose=True):
     results = {}
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -78,7 +78,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler,
                                                        num_workers=num_workers)
             # test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, num_workers=num_workers)
-            test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size*4, num_workers=num_workers*2)
+            test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size*2, num_workers=num_workers)
             initial_state_dict = None
             if rank == 0:
                 initial_state_dict = get_temp_state_dict(input_shape, n_class, conv_number=conv_number,
@@ -102,7 +102,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                        v_step=v_step, out_channels=out_channels,
                                        is_cuda_aware=is_cuda_aware, device=device,
                                        config=config, concurrency=concurrency,
-                                       exchange_period=exchange_period
+                                       exchange_period=exchange_period, verbose=verbose
                                        )
             if rank == 0:
                 print(f"\n--- Run number: {run_number}")
@@ -124,7 +124,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
     except Exception as err:
         import traceback
         traceback.print_exc()
-        print(err)
+        if verbose:
+            print(err)
         sys.stdout.flush()
         sys.exit()
 
