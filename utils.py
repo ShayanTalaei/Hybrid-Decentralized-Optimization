@@ -73,7 +73,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler,
                                                        num_workers=num_workers)
             # test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, num_workers=num_workers)
-            test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size*2, num_workers=num_workers)
+            test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size*4, num_workers=num_workers*2)
             initial_state_dict = None
             if rank == 0:
                 initial_state_dict = get_temp_state_dict(input_shape, n_class, conv_number=conv_number,
