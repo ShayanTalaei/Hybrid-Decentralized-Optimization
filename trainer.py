@@ -140,10 +140,12 @@ class HybridSGDTrainer:
                     self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
-                for turn in range(self.size // self.concurrency + 1):
-                    if self.rank // self.concurrency == turn:
-                        loss = self.take_step(data, target)
-                    self.comm.Barrier()
+                # for turn in range(self.size // self.concurrency + 1):
+                #     if self.rank // self.concurrency == turn:
+                #         loss = self.take_step(data, target)
+                #     self.comm.Barrier()
+                loss = self.take_step(data, target)
+
                 # step_loss += loss
                 # print(f"Rank {self.rank} steps: {self.steps} after take step")
                 if loss is None or loss > 10 ** 4:  # Diverged!
