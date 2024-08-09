@@ -119,7 +119,7 @@ class HybridSGDTrainer:
         elif self.scheduler is not None:
             self.scheduler.step()
 
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
 
         return total_loss / steps
 
