@@ -10,6 +10,9 @@ from mpi4py.util import dtlib
 from mpi4py import MPI
 import wandb
 
+
+wandb_key = ""
+
 if __name__ == "__main__":
     """Main function to run the script."""
     # Create argument parser
@@ -143,7 +146,10 @@ if __name__ == "__main__":
     if args.verbose:
         print('rank:', rank, 'size:', mpi4py.MPI.COMM_WORLD.Get_size(), 'device:', device)
     if rank == 0:
-        wandb.login()
+        if wandb_key != "":
+            wandb.login(key=wandb_key)
+        else:
+            wandb.login()
         wandb.init(project="HDO", group=args.wandb_group, config=vars(args))
         print(f"Learning rates: Zero-order: {args.lr0}, First-order: {args.lr1}")
         print(f"Steps: {args.steps}")
