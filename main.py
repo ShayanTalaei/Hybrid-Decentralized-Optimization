@@ -124,14 +124,11 @@ if __name__ == "__main__":
     if args.verbose:
         print('start rank:', rank)
     comm.Barrier()
-    torch.backends.cudnn.deterministic = True
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 
     # Check if CUDA is available and set the device accordingly
