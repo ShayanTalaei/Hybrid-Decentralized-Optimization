@@ -134,10 +134,10 @@ class HybridSGDTrainer:
 
                 if self.steps % self.log_period == 0:
                     # print(f"Rank {self.rank} steps: {self.steps} evaluate")
-                    self.comm.Barrier()
+                    # self.comm.Barrier()
                     # if self.rank == 0:
                     self.evaluate()
-                    self.comm.Barrier()
+                    # self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
                 # for turn in range(self.size // self.concurrency + 1):
@@ -181,11 +181,7 @@ class HybridSGDTrainer:
 
                     if self.size % 2 == 1:
                         pairs[per[-1]] = -1
-                    self.comm.Bcast(pairs, root=0)
-                    self.comm.Barrier()
-                else:
-                    self.comm.Barrier()
-                    self.comm.Bcast(pairs, root=0)
+                self.comm.Bcast(pairs, root=0)
                 # partner_rank = np.random.randint(self.size)
                 # while partner_rank == self.rank:
                 #     partner_rank = np.random.randint(self.size)
@@ -253,7 +249,7 @@ class HybridSGDTrainer:
                 result = self.model.evaluate(self.test_loader, self.criterion)
                 # empty cache
                 # torch.cuda.empty_cache()
-            self.comm.Barrier()
+            # self.comm.Barrier()
         validation_loss = result['loss']
         validation_accuracy = result['accuracy']
         training_loss = self.training_loss if self.training_loss else 0
