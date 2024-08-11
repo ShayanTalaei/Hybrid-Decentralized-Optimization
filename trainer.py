@@ -144,7 +144,9 @@ class HybridSGDTrainer:
                 #     if self.rank // self.concurrency == turn:
                 #         loss = self.take_step(data, target)
                 #     self.comm.Barrier()
+                self.comm.Barrier()
                 loss = self.take_step(data, target)
+                self.comm.Barrier()
 
                 # step_loss += loss
                 # print(f"Rank {self.rank} steps: {self.steps} after take step")
