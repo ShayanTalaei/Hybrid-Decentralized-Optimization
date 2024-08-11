@@ -68,6 +68,8 @@ if __name__ == "__main__":
     parser.add_argument("--exchange_period", default=0, type=int, help="The exchange period.")
     parser.add_argument("--wandb_group", default=None, help="The wandb group.")
     parser.add_argument("--verbose", action="store_true", help="Whether to print verbose logs.")
+    parser.add_argument("--cuda_dsa", action="store_true", help="Whether to use CUDA DSA.")
+
 
     # mpi4py.rc.threads = False
     # MPI.Finalize()
@@ -121,6 +123,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     rank = mpi4py.MPI.COMM_WORLD.Get_rank()
     comm = MPI.COMM_WORLD
+    if args.cuda_dsa:
+        os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+        os.environ['TORCH_USE_CUDA_DSA'] = "1"
     if args.verbose:
         print('start rank:', rank)
     comm.Barrier()
