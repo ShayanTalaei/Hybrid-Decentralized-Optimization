@@ -79,23 +79,23 @@ class HybridSGDTrainer:
             buffer_size += buf.data.nelement()
         model_size = total_elements + buffer_size
 
-        if self.size > 1:
-            if self.is_cuda_aware:
-                self.model_copy = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
-                self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
-            else:
-                self.model_copy = torch.zeros(model_size, dtype=torch.float64, device="cpu")
-                self.partner_model = torch.zeros(model_size, dtype=torch.float64, device="cpu")
-            self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
-                                                      self.partner_model.nelement() * self.partner_model.element_size())
-            # print('Rank:', self.rank, 'Model size:', model_size, self.model_copy.size(), self.model_copy.nelement() * self.model_copy.element_size())
-            self.buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
-                                              self.model_copy.nelement() * self.model_copy.element_size())
-            self.comm.Barrier()
-            # self.win = MPI.Win.Create(buf, comm=self.comm)
-            self.win = MPI.Win.Create(self.buf, disp_unit=self.model_copy.element_size(), comm=self.comm)
-            # self.win = MPI.Win.Allocate(self.model_copy.nelement() * self.model_copy.element_size(), comm=self.comm)
-            self.comm.Barrier()
+        # if self.size > 1:
+        #     if self.is_cuda_aware:
+        #         self.model_copy = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
+        #         self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
+        #     else:
+        #         self.model_copy = torch.zeros(model_size, dtype=torch.float64, device="cpu")
+        #         self.partner_model = torch.zeros(model_size, dtype=torch.float64, device="cpu")
+        #     self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
+        #                                               self.partner_model.nelement() * self.partner_model.element_size())
+        #     # print('Rank:', self.rank, 'Model size:', model_size, self.model_copy.size(), self.model_copy.nelement() * self.model_copy.element_size())
+        #     self.buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
+        #                                       self.model_copy.nelement() * self.model_copy.element_size())
+        #     self.comm.Barrier()
+        #     # self.win = MPI.Win.Create(buf, comm=self.comm)
+        #     self.win = MPI.Win.Create(self.buf, disp_unit=self.model_copy.element_size(), comm=self.comm)
+        #     # self.win = MPI.Win.Allocate(self.model_copy.nelement() * self.model_copy.element_size(), comm=self.comm)
+        #     self.comm.Barrier()
 
     def take_step(self, data, target):
         steps = 1
@@ -163,50 +163,59 @@ class HybridSGDTrainer:
                     self.steps += 1
                     continue
 
-                # print(f"Rank {self.rank} steps: {self.steps} before lock")
-
-                self.win.Lock(self.rank, lock_type=MPI.LOCK_EXCLUSIVE)
-                # print(f"Rank {self.rank} steps: {self.steps} after lock")
-
-                self.model_to_copy(self.model_copy)
-                # self.win.Put(self.buf, target_rank=self.rank)
-
-                # print(f"Rank {self.rank} steps: {self.steps} after model to copy")
-
-                self.win.Unlock(self.rank)
-                # print(f"Rank {self.rank} steps: {self.steps} after unlock")
-
                 pairs = np.empty(self.size, dtype=np.int32)
                 if self.rank == 0:
                     per = np.random.permutation(self.size)
-                    for i in range(0, self.size-1, 2):
+                    for i in range(0, self.size - 1, 2):
                         pairs[per[i]] = per[i + 1]
                         pairs[per[i + 1]] = per[i]
 
                     if self.size % 2 == 1:
                         pairs[per[-1]] = -1
                 self.comm.Bcast(pairs, root=0)
+
                 # partner_rank = np.random.randint(self.size)
                 # while partner_rank == self.rank:
                 #     partner_rank = np.random.randint(self.size)
                 partner_rank = pairs[self.rank]
-                # print(f"Rank {self.rank} steps: {self.steps} before lock partner")
-                # print(f"Rank {self.rank} steps: {self.steps} partner rank: {partner_rank}")
                 if partner_rank != -1:
-                    self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
-                    # print(f"Rank {self.rank} steps: {self.steps} after lock partner")
+                    model_copy = self.get_flat_model()
+                    data_received = self.comm.sendrecv(sendobj=model_copy, dest=partner_rank, source=partner_rank, sendtag=0, recvtag=0)
+                    new_model_param = (data_received + model_copy) / 2 if any(data_received) else model_copy
+                    self.copy_to_model(new_model_param)
 
-                    self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
-
-                    # print(f"Rank {self.rank} steps: {self.steps} after get")
-
-                    self.win.Unlock(partner_rank)
-                    # print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
-
-                    self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
-
-                    self.copy_to_model(self.partner_model)
-                # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+                # # print(f"Rank {self.rank} steps: {self.steps} before lock")
+                #
+                # self.win.Lock(self.rank, lock_type=MPI.LOCK_EXCLUSIVE)
+                # # print(f"Rank {self.rank} steps: {self.steps} after lock")
+                #
+                # self.model_to_copy(self.model_copy)
+                # # self.win.Put(self.buf, target_rank=self.rank)
+                #
+                # # print(f"Rank {self.rank} steps: {self.steps} after model to copy")
+                #
+                # self.win.Unlock(self.rank)
+                # # print(f"Rank {self.rank} steps: {self.steps} after unlock")
+                #
+                #
+                #
+                # # print(f"Rank {self.rank} steps: {self.steps} before lock partner")
+                # # print(f"Rank {self.rank} steps: {self.steps} partner rank: {partner_rank}")
+                # if partner_rank != -1:
+                #     self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
+                #     # print(f"Rank {self.rank} steps: {self.steps} after lock partner")
+                #
+                #     self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
+                #
+                #     # print(f"Rank {self.rank} steps: {self.steps} after get")
+                #
+                #     self.win.Unlock(partner_rank)
+                #     # print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
+                #
+                #     self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
+                #
+                #     self.copy_to_model(self.partner_model)
+                # # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.training_loss = loss
                 self.steps += 1
                 if self.steps == self.total_step_number + self.warmup_steps:
@@ -312,4 +321,10 @@ class HybridSGDTrainer:
                 t = param.data
                 model_copy_tensor[counter: counter + t.nelement()] = t.view(-1)
                 counter += t.nelement()
+
+    def get_flat_model(self):
+        model_flat = []
+        for param in self.model.parameters():
+            model_flat.append(param.data.view(-1))
+        return torch.cat(model_flat)
 
