@@ -93,7 +93,8 @@ class HybridSGDTrainer:
                                               self.model_copy.nelement() * self.model_copy.element_size())
             self.comm.Barrier()
             # self.win = MPI.Win.Create(buf, comm=self.comm)
-            self.win = MPI.Win.Allocate(self.model_copy.nelement() * self.model_copy.element_size(), comm=self.comm)
+            self.win = MPI.Win.Create(self.buf, disp_unit=self.model_copy.element_size(), comm=self.comm)
+            # self.win = MPI.Win.Allocate(self.model_copy.nelement() * self.model_copy.element_size(), comm=self.comm)
             self.comm.Barrier()
 
     def take_step(self, data, target):
@@ -168,7 +169,8 @@ class HybridSGDTrainer:
                 # print(f"Rank {self.rank} steps: {self.steps} after lock")
 
                 self.model_to_copy(self.model_copy)
-                self.win.Put(self.buf, target_rank=self.rank)
+                # self.win.Put(self.buf, target_rank=self.rank)
+
                 # print(f"Rank {self.rank} steps: {self.steps} after model to copy")
 
                 self.win.Unlock(self.rank)
