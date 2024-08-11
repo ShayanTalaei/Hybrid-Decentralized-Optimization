@@ -131,20 +131,20 @@ class HybridSGDTrainer:
         for taken_steps in range((self.total_step_number + self.warmup_steps) // len(self.train_loader) + 1):
             # step_loss = 0
             for (data, target) in self.train_loader:
-
+                self.comm.Barrier()
                 if self.steps % self.log_period == 0:
                     # print(f"Rank {self.rank} steps: {self.steps} evaluate")
                     # self.comm.Barrier()
                     # if self.rank == 0:
                     self.evaluate()
-                    # self.comm.Barrier()
+                    self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
                 # for turn in range(self.size // self.concurrency + 1):
                 #     if self.rank // self.concurrency == turn:
                 #         loss = self.take_step(data, target)
                 #     self.comm.Barrier()
-                self.comm.Barrier()
+                # self.comm.Barrier()
                 loss = self.take_step(data, target)
                 self.comm.Barrier()
 
