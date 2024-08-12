@@ -1,3 +1,4 @@
+import collections
 import math
 import sys
 import time
@@ -87,7 +88,9 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                                          device=device, config=config
                                                          )
                 if concurrency < size:
-                    initial_state_dict = initial_state_dict.to('cpu')
+                    initial_state_dict = collections.OrderedDict(
+                        {key: value.to('cpu') for key, value in initial_state_dict.items()}
+                    )
                     torch.cuda.empty_cache()
             if size > 1:
                 comm.barrier()

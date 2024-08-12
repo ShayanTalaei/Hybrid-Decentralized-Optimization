@@ -1,3 +1,5 @@
+import collections
+
 import numpy as np
 import torch
 import wandb
@@ -36,7 +38,9 @@ class HybridSGDTrainer:
                                        model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
                                        out_channels=out_channels, device=device, config=config)
                 if self.concurrency < self.size:
-                    initial_state_dict = initial_state_dict.to(device)
+                    initial_state_dict = collections.OrderedDict(
+                        {key: value.to(device) for key, value in initial_state_dict.items()}
+                    )
                     self.model.load_state_dict(initial_state_dict)
                     torch.cuda.empty_cache()
             if self.concurrency < self.size:
