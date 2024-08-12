@@ -35,11 +35,13 @@ class HybridSGDTrainer:
                 self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                        model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
                                        out_channels=out_channels, device=device, config=config)
+                if self.concurrency < self.size:
+                    initial_state_dict = initial_state_dict.to(device)
+                    self.model.load_state_dict(initial_state_dict)
+                    torch.cuda.empty_cache()
             if self.concurrency < self.size:
-                torch.cuda.empty_cache()
                 self.comm.Barrier()
 
-        self.model.load_state_dict(initial_state_dict)
         self.test_loader = test_loader
         self.train_loader = train_loader
         assert grad_mode in ['first_order', 'zeroth_order_forward-mode_AD', 'zeroth_order_rge', 'zeroth_order_cge', 'zeroth_order_forward-mode_AD_sim']
@@ -155,8 +157,9 @@ class HybridSGDTrainer:
                 for turn in range(self.size // self.concurrency + 1):
                     if self.rank // self.concurrency == turn:
                         loss = self.take_step(data, target)
+                        if self.concurrency < self.size:
+                            torch.cuda.empty_cache()
                     if self.concurrency < self.size:
-                        torch.cuda.empty_cache()
                         self.comm.Barrier()
                 # self.comm.Barrier()
 
@@ -191,9 +194,25 @@ class HybridSGDTrainer:
                 partner_rank = pairs[self.rank]
                 if partner_rank != -1:
                     model_copy = self.get_flat_model()
+                    if self.concurrency < self.size:
+                        for turn in range(self.size // self.concurrency + 1):
+                            if self.rank // self.concurrency == turn:
+                                model_copy = model_copy.to('cpu')
+                                torch.cuda.empty_cache()
+                            self.comm.Barrier()
                     data_received = self.comm.sendrecv(sendobj=model_copy, dest=partner_rank, source=partner_rank, sendtag=0, recvtag=0)
                     new_model_param = (data_received + model_copy) / 2 if any(data_received) else model_copy
+                    if self.concurrency < self.size:
+                        for turn in range(self.size // self.concurrency + 1):
+                            if self.rank // self.concurrency == turn:
+                                new_model_param = new_model_param.to(self.model.device)
+                                torch.cuda.empty_cache()
+                            self.comm.Barrier()
                     self.copy_to_model(new_model_param)
+                else:
+                    if self.concurrency < self.size:
+                        for turn in range(2 * (self.size // self.concurrency + 1)):
+                            self.comm.Barrier()
 
                 # # print(f"Rank {self.rank} steps: {self.steps} before lock")
                 #
@@ -271,8 +290,9 @@ class HybridSGDTrainer:
                 if self.verbose:
                     print(f"Rank {self.rank} steps: {self.steps} evaluate")
                 result = self.model.evaluate(self.test_loader, self.criterion)
+                if self.concurrency < self.size:
+                    torch.cuda.empty_cache()
             if self.concurrency < self.size:
-                torch.cuda.empty_cache()
                 self.comm.Barrier()
         validation_loss = result['loss']
         validation_accuracy = result['accuracy']
