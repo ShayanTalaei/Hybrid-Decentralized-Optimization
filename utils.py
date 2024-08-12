@@ -87,11 +87,9 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                                          freeze_model=freeze_model, out_channels=out_channels,
                                                          device=device, config=config
                                                          )
-                if concurrency < size:
-                    initial_state_dict = collections.OrderedDict(
-                        {key: value.to('cpu') for key, value in initial_state_dict.items()}
-                    )
-                    torch.cuda.empty_cache()
+                initial_state_dict = collections.OrderedDict(
+                    {key: value.to('cpu') for key, value in initial_state_dict.items()}
+                )
             if size > 1:
                 comm.barrier()
                 initial_state_dict = comm.bcast(initial_state_dict, root=0)
