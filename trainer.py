@@ -41,7 +41,8 @@ class HybridSGDTrainer:
                     initial_state_dict = collections.OrderedDict(
                         {key: value.to(device) for key, value in initial_state_dict.items()}
                     )
-                    self.model.load_state_dict(initial_state_dict)
+                self.model.load_state_dict(initial_state_dict)
+                if self.concurrency < self.size:
                     torch.cuda.empty_cache()
             if self.concurrency < self.size:
                 self.comm.Barrier()
