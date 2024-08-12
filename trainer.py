@@ -30,9 +30,14 @@ class HybridSGDTrainer:
         self.log_period = log_period
         self.is_cuda_aware = is_cuda_aware
         self.warmup_steps = warmup_steps
-        self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
-                               model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
-                               out_channels=out_channels, device=device, config=config)
+        for turn in range(self.size // self.concurrency + 1):
+            if self.rank // self.concurrency == turn:
+                self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
+                                       model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
+                                       out_channels=out_channels, device=device, config=config)
+            if self.concurrency < self.size:
+                torch.cuda.empty_cache()
+                self.comm.Barrier()
 
         self.model.load_state_dict(initial_state_dict)
         self.test_loader = test_loader
@@ -146,7 +151,13 @@ class HybridSGDTrainer:
                 #         loss = self.take_step(data, target)
                 #     self.comm.Barrier()
                 # self.comm.Barrier()
-                loss = self.take_step(data, target)
+                loss = None
+                for turn in range(self.size // self.concurrency + 1):
+                    if self.rank // self.concurrency == turn:
+                        loss = self.take_step(data, target)
+                    if self.concurrency < self.size:
+                        torch.cuda.empty_cache()
+                        self.comm.Barrier()
                 # self.comm.Barrier()
 
                 # step_loss += loss
@@ -260,9 +271,9 @@ class HybridSGDTrainer:
                 if self.verbose:
                     print(f"Rank {self.rank} steps: {self.steps} evaluate")
                 result = self.model.evaluate(self.test_loader, self.criterion)
-                # empty cache
-                # torch.cuda.empty_cache()
-            # self.comm.Barrier()
+            if self.concurrency < self.size:
+                torch.cuda.empty_cache()
+                self.comm.Barrier()
         validation_loss = result['loss']
         validation_accuracy = result['accuracy']
         training_loss = self.training_loss if self.training_loss else 0
