@@ -54,8 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
     parser.add_argument("--mpi_cuda_aware", action="store_true", help="Whether MPI is CUDA aware.")
-    parser.add_argument('--weight_decay', default=0.1,
-                        type=float)
+    parser.add_argument('--weight_decay', default=0.0, type=float)
 
     # transformer arguments
     parser.add_argument('--dropout', default=0.1, type=float)
