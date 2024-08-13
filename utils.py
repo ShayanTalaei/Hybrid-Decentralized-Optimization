@@ -8,7 +8,6 @@ import gc
 import pickle
 
 import torch
-import matplotlib.pyplot as plt
 
 from trainer import HybridSGDTrainer
 from datasets.datasets import get_dataset
@@ -17,33 +16,6 @@ from models import get_temp_state_dict
 
 def cast(lst, dtype=torch.float32):
     return list(map(lambda x: torch.tensor(x).to(dtype), lst))
-
-
-def plot_trends(trends, x_axis, y_axis, start=0, path=None, end=float('inf'), dataset_folder=None, name=None):
-    fig = plt.figure()
-    fig.set_facecolor('white')
-    plt.xlabel(x_axis)
-    plt.ylabel(y_axis)
-    plt.grid(True)
-
-    shapes = ["8", "s", "p", "P", "*", "h", "H", "x", "d", "D"]
-
-    for i, case in enumerate(trends):
-        trend = trends[case]
-        X, Y = trend[x_axis], trend[y_axis]
-        Z = zip(X, Y)
-        X, Y = [], []
-        for z in Z:
-            if start <= z[0] <= end:
-                X.append(z[0])
-                Y.append(z[1])
-        count = len(X)
-        plt.plot(X, Y, marker=shapes[i], label=case, markevery=math.ceil(count * 0.1))
-
-    plt.legend()
-    if name is not None:
-        plt.savefig(path + f'results/{dataset_folder}/{name}_{y_axis}_{x_axis}.pdf')
-    plt.show()
 
 
 def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128, num_layer=2, reps=1, path=None,
