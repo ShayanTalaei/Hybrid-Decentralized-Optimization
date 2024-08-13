@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
     parser.add_argument("--z_grad", default="zeroth_order_rge", help="The gradient mode for the zeroth-order.")
     # parser.add_argument("--v_step", default=10.0, type=float, help="The step size for the zeroth-order optimizer.")
-    parser.add_argument("--v_step", default=1e-6, type=float, help="The step size for the zeroth-order optimizer.")
+    parser.add_argument("--v_step", default=1, type=float, help="The step size for the zeroth-order optimizer.")
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
     parser.add_argument("--mpi_cuda_aware", action="store_true", help="Whether MPI is CUDA aware.")
