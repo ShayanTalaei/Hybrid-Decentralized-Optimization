@@ -32,21 +32,8 @@ class HybridSGDTrainer:
         self.log_period = log_period
         self.is_cuda_aware = is_cuda_aware
         self.warmup_steps = warmup_steps
-        # for turn in range(self.size // self.concurrency + 1):
-        #     if self.rank // self.concurrency == turn:
-        #         self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
-        #                                model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
-        #                                out_channels=out_channels, device=device, config=config)
-        #         initial_state_dict = collections.OrderedDict(
-        #             {key: value.to(device) for key, value in initial_state_dict.items()}
-        #         )
-        #         self.model.load_state_dict(initial_state_dict)
-        #         if self.concurrency < self.size:
-        #             torch.cuda.empty_cache()
-        #     if self.concurrency < self.size:
-        #         self.comm.Barrier()
-        for turn in range(self.size):
-            if self.rank == turn:
+        for turn in range(self.size // self.concurrency + 1):
+            if self.rank // self.concurrency == turn:
                 self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                        model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
                                        out_channels=out_channels, device=device, config=config)
@@ -54,7 +41,10 @@ class HybridSGDTrainer:
                     {key: value.to(device) for key, value in initial_state_dict.items()}
                 )
                 self.model.load_state_dict(initial_state_dict)
-            self.comm.Barrier()
+                if self.concurrency < self.size:
+                    torch.cuda.empty_cache()
+            if self.concurrency < self.size:
+                self.comm.Barrier()
 
         self.test_loader = test_loader
         self.train_loader = train_loader
