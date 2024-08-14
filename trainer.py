@@ -37,10 +37,10 @@ class HybridSGDTrainer:
                 self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                        model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
                                        out_channels=out_channels, device=device, config=config)
-                if self.concurrency < self.size:
-                    initial_state_dict = collections.OrderedDict(
-                        {key: value.to(device) for key, value in initial_state_dict.items()}
-                    )
+                # if self.concurrency < self.size:
+                initial_state_dict = collections.OrderedDict(
+                    {key: value.to(device) for key, value in initial_state_dict.items()}
+                )
                 self.model.load_state_dict(initial_state_dict)
                 if self.concurrency < self.size:
                     torch.cuda.empty_cache()
