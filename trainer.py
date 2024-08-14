@@ -199,21 +199,23 @@ class HybridSGDTrainer:
                 partner_rank = pairs[self.rank]
                 if partner_rank != -1:
                     model_copy = self.get_flat_model()
-                    if self.concurrency < self.size:
-                        for turn in range(self.size // self.concurrency + 1):
-                            if self.rank // self.concurrency == turn:
-                                model_copy = model_copy.to('cpu')
-                                torch.cuda.empty_cache()
-                            self.comm.Barrier()
+                    # if self.concurrency < self.size:
+                    #     for turn in range(self.size // self.concurrency + 1):
+                    #         if self.rank // self.concurrency == turn:
+                    #             model_copy = model_copy.to('cpu')
+                    #             torch.cuda.empty_cache()
+                    #         self.comm.Barrier()
+                    model_copy = model_copy.to('cpu')
                     data_received = self.comm.sendrecv(sendobj=model_copy, dest=partner_rank, source=partner_rank, sendtag=0, recvtag=0)
-                    data_received = data_received.to(model_copy.device)
+                    # data_received = data_received.to(model_copy.device)
                     new_model_param = (data_received + model_copy) / 2 if any(data_received) else model_copy
-                    if self.concurrency < self.size:
-                        for turn in range(self.size // self.concurrency + 1):
-                            if self.rank // self.concurrency == turn:
-                                new_model_param = new_model_param.to(self.model.device)
-                                torch.cuda.empty_cache()
-                            self.comm.Barrier()
+                    # if self.concurrency < self.size:
+                    #     for turn in range(self.size // self.concurrency + 1):
+                    #         if self.rank // self.concurrency == turn:
+                    #             new_model_param = new_model_param.to(self.model.device)
+                    #             torch.cuda.empty_cache()
+                    #         self.comm.Barrier()
+                    new_model_param = new_model_param.to(self.model.device)
                     self.copy_to_model(new_model_param)
                 else:
                     if self.concurrency < self.size:
