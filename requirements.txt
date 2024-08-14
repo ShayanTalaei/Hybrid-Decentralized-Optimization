@@ -1,9 +1,9 @@
-#matplotlib
 numpy
 torch
 torchsummary
 torchvision
 tqdm
+openmpi
 pytorch_warmup
 mpi4py
 wandb
