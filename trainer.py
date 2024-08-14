@@ -206,6 +206,7 @@ class HybridSGDTrainer:
                                 torch.cuda.empty_cache()
                             self.comm.Barrier()
                     data_received = self.comm.sendrecv(sendobj=model_copy, dest=partner_rank, source=partner_rank, sendtag=0, recvtag=0)
+                    data_received = data_received.to(model_copy.device)
                     new_model_param = (data_received + model_copy) / 2 if any(data_received) else model_copy
                     if self.concurrency < self.size:
                         for turn in range(self.size // self.concurrency + 1):
