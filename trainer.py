@@ -18,12 +18,13 @@ class HybridSGDTrainer:
                  lr, conv_number=2, hidden=128, num_layer=2, model_name=None, freeze_model=False, random_vecs=200,
                  momentum0=0.0, scheduler=False, scheduler_warmup_steps=0, warmup_steps=0, total_step_number=200,
                  log_period=10, v_step=10.0, out_channels=8, is_cuda_aware=False, device='cpu', config=None,
-                 momentum1=0.0, concurrency=1, exchange_period=0, verbose=True):
+                 momentum1=0.0, concurrency=1, exchange_period=0, verbose=True, clear_cache=False):
         self.verbose = verbose
         self.dataset_name = dataset_name
         self.rank = rank
         self.size = size
         self.comm = comm
+        self.clear_cache = clear_cache
         self.exchange_period = exchange_period
         self.fn = fn
         self.lr = lr
@@ -150,6 +151,8 @@ class HybridSGDTrainer:
                     # self.comm.Barrier()
                     # if self.rank == 0:
                     self.evaluate()
+                    if self.clear_cache:
+                        torch.cuda.empty_cache()
                     # self.comm.Barrier()
                 # print(f"Rank {self.rank} steps: {self.steps} before take step")
 

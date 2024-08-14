@@ -70,6 +70,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_group", default=None, help="The wandb group.")
     parser.add_argument("--verbose", action="store_true", help="Whether to print verbose logs.")
     parser.add_argument("--cuda_dsa", action="store_true", help="Whether to use CUDA DSA.")
+    parser.add_argument("--clear_cache", action="store_true", help="Whether to clear the cache.")
 
 
     # mpi4py.rc.threads = False
@@ -184,6 +185,8 @@ if __name__ == "__main__":
         print(f"Path: {args.path}")
         print(f"Is CUDA aware: {args.mpi_cuda_aware}")
         print(f"Wandb group: {args.wandb_group}")
+        print(f"Verbose: {args.verbose}")
+        print(f"Clear cache: {args.clear_cache}")
 
     comm.Barrier()
 
@@ -220,7 +223,8 @@ if __name__ == "__main__":
                exchange_period=args.exchange_period,
                device=device,
                config=args,
-               verbose=args.verbose
+               verbose=args.verbose,
+               clear_cache=args.clear_cache
                )
 
     if rank == 0:

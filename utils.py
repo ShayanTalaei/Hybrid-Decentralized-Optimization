@@ -22,7 +22,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
         file_name=None, model_name=None, freeze_model=False, plot=False, random_vecs=200,
         num_workers=2, momentum0=0.0, momentum1=0.0, f_grad='first_order', z_grad='zeroth_order_cge', scheduler=False,
         scheduler_warmup_steps=0, warmup_steps=0, v_step=10.0, out_channels=8, f_batch_size=100, z_batch_size=100,
-        is_cuda_aware=False, concurrency=1, device='cpu', config=None, exchange_period=0, verbose=True):
+        is_cuda_aware=False, concurrency=1, device='cpu', config=None, exchange_period=0, verbose=True,
+        clear_cache=False):
     results = {}
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -81,7 +82,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                        v_step=v_step, out_channels=out_channels,
                                        is_cuda_aware=is_cuda_aware, device=device,
                                        config=config, concurrency=concurrency,
-                                       exchange_period=exchange_period, verbose=verbose
+                                       exchange_period=exchange_period, verbose=verbose,
+                                       clear_cache=clear_cache
                                        )
             if rank == 0:
                 print(f"\n--- Run number: {run_number}")
