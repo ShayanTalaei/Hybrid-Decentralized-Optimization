@@ -159,6 +159,11 @@ class HybridSGDTrainer:
                 #     self.comm.Barrier()
                 # self.comm.Barrier()
                 loss = None
+                if len(data) < 2:
+                    # coopy data to increase the size of the batch
+                    data = torch.cat([data, data])
+                    target = torch.cat([target, target])
+
                 for turn in range(self.size // self.concurrency + 1):
                     if self.rank // self.concurrency == turn:
                         loss = self.take_step(data, target)

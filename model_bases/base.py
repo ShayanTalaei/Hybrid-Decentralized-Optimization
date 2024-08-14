@@ -30,6 +30,9 @@ class EnhancedModel(nn.Module):
             for data in dataloader:
                 xb, yb = data
                 xb, yb = xb.to(self.device), yb.to(self.device)
+                if len(xb) < 2:
+                    xb = torch.cat([xb, xb])
+                    yb = torch.cat([yb, yb])
                 count += 1
                 outputs = model(xb)
                 loss = criterion(outputs, yb).item()
