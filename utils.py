@@ -1,5 +1,4 @@
 import collections
-import math
 import sys
 import time
 import os
@@ -19,7 +18,7 @@ def cast(lst, dtype=torch.float32):
 
 
 def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128, num_layer=2, reps=1, path=None,
-        file_name=None, model_name=None, freeze_model=False, plot=False, random_vecs=200,
+        file_name=None, model_name=None, freeze_model=False, random_vecs=200,
         num_workers=2, momentum0=0.0, momentum1=0.0, f_grad='first_order', z_grad='zeroth_order_cge', scheduler=False,
         scheduler_warmup_steps=0, warmup_steps=0, v_step=10.0, out_channels=8, f_batch_size=100, z_batch_size=100,
         is_cuda_aware=False, concurrency=1, device='cpu', config=None, exchange_period=0, verbose=True,
@@ -41,6 +40,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
     lr = lr1 if is_first else lr0
     try:
         for run_number in range(1, reps + 1):
+            # Set the data partition, the batch size and the gradient mode for the worker
             if is_first:
                 grad_mode = f_grad
                 sampler = torch.utils.data.DistributedSampler(train_set, fn, rank)
@@ -51,8 +51,9 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                 batch_size = z_batch_size
             train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=sampler,
                                                        num_workers=num_workers)
-            # test_loader = torch.utils.data.DataLoader(test_set, batch_size=4 * batch_size, num_workers=num_workers)
             test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size*2, num_workers=num_workers)
+
+            # Sync the initial state dict among the workers
             initial_state_dict = None
             if rank == 0:
                 initial_state_dict = get_temp_state_dict(input_shape, n_class, conv_number=conv_number,
@@ -60,7 +61,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                                                          freeze_model=freeze_model, out_channels=out_channels,
                                                          device=device, config=config
                                                          )
-
+                # We put the state dict on the CPU to avoid memory issues while broadcasting.
                 initial_state_dict = collections.OrderedDict(
                     {key: value.to('cpu') for key, value in initial_state_dict.items()}
                 )
@@ -70,6 +71,7 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
                 comm.barrier()
                 initial_state_dict = comm.bcast(initial_state_dict, root=0)
 
+            # Create the trainer
             trainer = HybridSGDTrainer(rank, size, comm, fn, grad_mode,
                                        dataset_name, train_loader, test_loader,
                                        initial_state_dict, lr,
@@ -88,6 +90,8 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
             if rank == 0:
                 print(f"\n--- Run number: {run_number}")
             comm.Barrier()
+
+            # Train the model
             start_time = time.time()
             history = trainer.train()
             comm.Barrier()
@@ -112,8 +116,5 @@ def run(fn, dataset_name, steps, lr0, lr1, log_period, conv_number=2, hidden=128
         os.makedirs(f'{path}/results/{dataset_name}', exist_ok=True)
         with open(f'{path}/results/{dataset_name}/{file_name}_rank_{rank}_size_{size}_fn_{fn}_warmup_{warmup_steps}_steps_{steps}.pkl', 'wb') as file:
             pickle.dump(results, file)
-    # if rank == 0 and plot:
-    #     name = 'test'
-    #     os.makedirs(f'{path}/results/{dataset_name}', exist_ok=True)
-    #     plot_trends(results, 'Steps', 'Training loss', 100, path=path, dataset_folder=dataset_name, name=name)
+
     return results

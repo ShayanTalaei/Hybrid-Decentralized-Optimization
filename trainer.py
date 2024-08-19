@@ -35,10 +35,11 @@ class HybridSGDTrainer:
         self.warmup_steps = warmup_steps
         for turn in range(self.size // self.concurrency + 1):
             if self.rank // self.concurrency == turn:
+                # Initialize the model
                 self.model = get_model(dataset_name, conv_number=conv_number, hidden=hidden, num_layer=num_layer,
                                        model_name=model_name, freeze_model=freeze_model, random_vecs=random_vecs,
                                        out_channels=out_channels, device=device, config=config)
-                # if self.concurrency < self.size:
+                # Load the synchronized initial state dict
                 initial_state_dict = collections.OrderedDict(
                     {key: value.to(device) for key, value in initial_state_dict.items()}
                 )
@@ -50,10 +51,13 @@ class HybridSGDTrainer:
 
         self.test_loader = test_loader
         self.train_loader = train_loader
-        assert grad_mode in ['first_order', 'zeroth_order_forward-mode_AD', 'zeroth_order_rge', 'zeroth_order_cge', 'zeroth_order_forward-mode_AD_sim']
+        assert grad_mode in ['first_order', 'zeroth_order_forward-mode_AD', 'zeroth_order_rge', 'zeroth_order_cge',
+                             'zeroth_order_forward-mode_AD_sim']
+        # Initialize the optimizer
         self.grad_mode = grad_mode
         self.criterion = get_criterion(dataset_name)
-        grad_mode_to_opt = {'first_order': 'SGD', 'zeroth_order_forward-mode_AD': 'ZAD', 'zeroth_order_rge': 'ZAD', 'zeroth_order_cge': 'ZAD', 'zeroth_order_forward-mode_AD_sim': 'ZAD'}
+        grad_mode_to_opt = {'first_order': 'SGD', 'zeroth_order_forward-mode_AD': 'ZAD', 'zeroth_order_rge': 'ZAD',
+                            'zeroth_order_cge': 'ZAD', 'zeroth_order_forward-mode_AD_sim': 'ZAD'}
         opt_args = {'lr': lr, 'momentum': momentum1, 'weight_decay': config.weight_decay}
         if self.grad_mode.startswith('zeroth_order'):
             opt_args['random_vec'] = random_vecs
@@ -72,6 +76,7 @@ class HybridSGDTrainer:
         else:
             params = self.model.parameters()
         self.optimizer = getattr(optimizers, grad_mode_to_opt[grad_mode])(params, **opt_args)
+        # Initialize the learning rate scheduler
         self.scheduler = None
         if scheduler:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,
@@ -84,48 +89,21 @@ class HybridSGDTrainer:
         self.history = []
         self.steps = 0
 
-        total_elements = 0
-        for param in list(self.model.parameters()):
-            total_elements += param.data.nelement()
-        buffer_size = 0
-        for buf in list(self.model.buffers()):
-            buffer_size += buf.data.nelement()
-        model_size = total_elements + buffer_size
-
-        # if self.size > 1:
-        #     if self.is_cuda_aware:
-        #         self.model_copy = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
-        #         self.partner_model = torch.zeros(model_size, dtype=torch.float64, device=self.model.device)
-        #     else:
-        #         self.model_copy = torch.zeros(model_size, dtype=torch.float64, device="cpu")
-        #         self.partner_model = torch.zeros(model_size, dtype=torch.float64, device="cpu")
-        #     self.partner_buf = MPI.memory.fromaddress(self.partner_model.data_ptr(),
-        #                                               self.partner_model.nelement() * self.partner_model.element_size())
-        #     # print('Rank:', self.rank, 'Model size:', model_size, self.model_copy.size(), self.model_copy.nelement() * self.model_copy.element_size())
-        #     self.buf = MPI.memory.fromaddress(self.model_copy.data_ptr(),
-        #                                       self.model_copy.nelement() * self.model_copy.element_size())
-        #     self.comm.Barrier()
-        #     # self.win = MPI.Win.Create(buf, comm=self.comm)
-        #     self.win = MPI.Win.Create(self.buf, disp_unit=self.model_copy.element_size(), comm=self.comm)
-        #     # self.win = MPI.Win.Allocate(self.model_copy.nelement() * self.model_copy.element_size(), comm=self.comm)
-        #     self.comm.Barrier()
-
     def take_step(self, data, target):
         steps = 1
         taken_steps = 0
         total_loss = 0
+
+        # Train the model on the batched data
         while taken_steps < steps:
-            # print("Rank: ", self.rank, 'optimize')
             data, target = data.to(self.model.device), target.to(self.model.device)
-            # while True:
-            #     try:
             loss = self.optimizer.optimize(self.model, data, target, self.criterion)
-                #     break
-                # except Exception as e:
-                #     print("Rank: ", self.rank, e)
-                #     print("Rank: ", self.rank, "Retrying...")
             taken_steps += 1
             total_loss += loss
+
+        # Step the learning rate scheduler
+        # In the first steps, the warmup scheduler is used.
+        # After the warmup steps, the cosine annealing scheduler is used.
         if self.warmup_scheduler is not None:
             with self.warmup_scheduler.dampening():
                 if self.scheduler is not None and self.warmup_scheduler.last_step + 1 >= self.scheduler_warmup_steps:
@@ -133,40 +111,32 @@ class HybridSGDTrainer:
         elif self.scheduler is not None:
             self.scheduler.step()
 
-        # torch.cuda.empty_cache()
-
         return total_loss / steps
 
     def train(self):
         self.model.train()
+
+        # If the model is trained on a single worker, use the solo training method to avoid communication checks
         if self.size == 1:
             return self.train_solo()
 
+        # Train the model with the hybrid SGD method
         for taken_steps in range((self.total_step_number + self.warmup_steps) // len(self.train_loader) + 1):
-            # step_loss = 0
             for (data, target) in self.train_loader:
-                # self.comm.Barrier()
+
+                # Evaluate the model every log_period steps
                 if self.steps % self.log_period == 0:
-                    # print(f"Rank {self.rank} steps: {self.steps} evaluate")
-                    # self.comm.Barrier()
-                    # if self.rank == 0:
                     self.evaluate()
                     if self.clear_cache:
                         torch.cuda.empty_cache()
-                    # self.comm.Barrier()
-                # print(f"Rank {self.rank} steps: {self.steps} before take step")
 
-                # for turn in range(self.size // self.concurrency + 1):
-                #     if self.rank // self.concurrency == turn:
-                #         loss = self.take_step(data, target)
-                #     self.comm.Barrier()
-                # self.comm.Barrier()
                 loss = None
                 if len(data) < 2:
                     # coopy data to increase the size of the batch
                     data = torch.cat([data, data])
                     target = torch.cat([target, target])
 
+                # Train the model on the batched data
                 for turn in range(self.size // self.concurrency + 1):
                     if self.rank // self.concurrency == turn:
                         loss = self.take_step(data, target)
@@ -174,22 +144,22 @@ class HybridSGDTrainer:
                             torch.cuda.empty_cache()
                     if self.concurrency < self.size:
                         self.comm.Barrier()
-                # self.comm.Barrier()
 
-                # step_loss += loss
-                # print(f"Rank {self.rank} steps: {self.steps} after take step")
-                if loss is None or loss > 10 ** 4:  # Diverged!
-                    # step_loss /= len(self.train_loader)
-                    # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
-                    # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+                # Check if the loss is nan or diverged
+                if loss is None or loss > 10 ** 4:
                     self.training_loss = loss
                     return self.history
-                if self.steps < self.warmup_steps or (self.exchange_period != 0 and self.steps // self.exchange_period % 2 == 0):
-                    # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
+
+                # We do not perform communication in the warmup steps.
+                # You can set the exchange_period to alternate between communicating and not communicating
+                # after each exchange_period steps.
+                if self.steps < self.warmup_steps or (
+                        self.exchange_period != 0 and self.steps // self.exchange_period % 2 == 0):
                     self.training_loss = loss
                     self.steps += 1
                     continue
 
+                # Make pairs of workers to exchange the model parameters
                 pairs = np.empty(self.size, dtype=np.int32)
                 if self.rank == 0:
                     per = np.random.permutation(self.size)
@@ -201,28 +171,16 @@ class HybridSGDTrainer:
                         pairs[per[-1]] = -1
                 self.comm.Bcast(pairs, root=0)
 
-                # partner_rank = np.random.randint(self.size)
-                # while partner_rank == self.rank:
-                #     partner_rank = np.random.randint(self.size)
+                # Exchange the model parameters with the paired worker and average the parameters
                 partner_rank = pairs[self.rank]
                 if partner_rank != -1:
                     model_copy = self.get_flat_model()
-                    # if self.concurrency < self.size:
-                    #     for turn in range(self.size // self.concurrency + 1):
-                    #         if self.rank // self.concurrency == turn:
-                    #             model_copy = model_copy.to('cpu')
-                    #             torch.cuda.empty_cache()
-                    #         self.comm.Barrier()
+                    # We set the model_copy to the CPU to avoid memory issues while sending the model_copy.
+                    # Note that you can set the model_copy to the GPU if you have enough memory and MPI is CUDA aware.
                     model_copy = model_copy.to('cpu')
-                    data_received = self.comm.sendrecv(sendobj=model_copy, dest=partner_rank, source=partner_rank, sendtag=0, recvtag=0)
-                    # data_received = data_received.to(model_copy.device)
+                    data_received = self.comm.sendrecv(sendobj=model_copy, dest=partner_rank, source=partner_rank,
+                                                       sendtag=0, recvtag=0)
                     new_model_param = (data_received + model_copy) / 2 if any(data_received) else model_copy
-                    # if self.concurrency < self.size:
-                    #     for turn in range(self.size // self.concurrency + 1):
-                    #         if self.rank // self.concurrency == turn:
-                    #             new_model_param = new_model_param.to(self.model.device)
-                    #             torch.cuda.empty_cache()
-                    #         self.comm.Barrier()
                     new_model_param = new_model_param.to(self.model.device)
                     self.copy_to_model(new_model_param)
                 else:
@@ -230,52 +188,17 @@ class HybridSGDTrainer:
                         for turn in range(2 * (self.size // self.concurrency + 1)):
                             self.comm.Barrier()
 
-                # # print(f"Rank {self.rank} steps: {self.steps} before lock")
-                #
-                # self.win.Lock(self.rank, lock_type=MPI.LOCK_EXCLUSIVE)
-                # # print(f"Rank {self.rank} steps: {self.steps} after lock")
-                #
-                # self.model_to_copy(self.model_copy)
-                # # self.win.Put(self.buf, target_rank=self.rank)
-                #
-                # # print(f"Rank {self.rank} steps: {self.steps} after model to copy")
-                #
-                # self.win.Unlock(self.rank)
-                # # print(f"Rank {self.rank} steps: {self.steps} after unlock")
-                #
-                #
-                #
-                # # print(f"Rank {self.rank} steps: {self.steps} before lock partner")
-                # # print(f"Rank {self.rank} steps: {self.steps} partner rank: {partner_rank}")
-                # if partner_rank != -1:
-                #     self.win.Lock(partner_rank, lock_type=MPI.LOCK_SHARED)
-                #     # print(f"Rank {self.rank} steps: {self.steps} after lock partner")
-                #
-                #     self.win.Get((self.partner_buf, MPI.FLOAT), target_rank=partner_rank)
-                #
-                #     # print(f"Rank {self.rank} steps: {self.steps} after get")
-                #
-                #     self.win.Unlock(partner_rank)
-                #     # print(f"Rank {self.rank} steps: {self.steps} after unlock partner")
-                #
-                #     self.partner_model[:] = (self.partner_model + self.model_copy) / 2 if any(self.partner_model) else self.model_copy
-                #
-                #     self.copy_to_model(self.partner_model)
-                # # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.training_loss = loss
                 self.steps += 1
                 if self.steps == self.total_step_number + self.warmup_steps:
                     return self.history
-                # print(f"Rank {self.rank} steps: {self.steps} after copy to model")
-            # step_loss /= len(self.train_loader)
-            # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
-            # self.steps += 1
+
         return self.history
 
     def train_solo(self):
+        # This method is used to train the model on a single worker
         assert self.size == 1
         for taken_steps in range((self.total_step_number + self.warmup_steps) // len(self.train_loader) + 1):
-            # step_loss = 0
             for (data, target) in self.train_loader:
                 if self.steps % self.log_period == 0:
                     self.evaluate()
@@ -283,24 +206,21 @@ class HybridSGDTrainer:
                         return self.history
                     if self.dataset_name == 'cifar10' and self.history[-1]['eval/accuracy'] < 0.2 and self.steps > 200:
                         return self.history
+
                 loss = self.take_step(data, target)
-                # step_loss += loss
-                # self.training_loss = self.training_loss * 0.95 + loss * 0.05 if self.training_loss is not None else loss
                 self.training_loss = loss
+
                 if loss is None or loss is torch.nan or loss > 10 ** 6:  # Diverged!
-                    print("diverged")
-                    # step_loss /= len(self.train_loader)
-                    # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
                     return self.history
                 self.steps += 1
                 if self.steps == self.total_step_number + self.warmup_steps:
                     return self.history
-            # self.training_loss = self.training_loss * 0.95 + step_loss * 0.05 if self.training_loss is not None else step_loss
-            # self.steps += 1
+
         return self.history
 
     def evaluate(self):
         self.model.eval()
+        # We evaluate each worker on the whole evaluation dataset
         for turn in range(self.size // self.concurrency + 1):
             if self.rank // self.concurrency == turn:
                 if self.verbose:
@@ -315,12 +235,13 @@ class HybridSGDTrainer:
         training_loss = self.training_loss if self.training_loss else 0
         if self.verbose:
             print(f"Rank {self.rank}: " +
-                "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
-                .format(self.steps,
-                        training_loss,
-                        validation_loss,
-                        validation_accuracy)
-            )
+                  "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
+                  .format(self.steps,
+                          training_loss,
+                          validation_loss,
+                          validation_accuracy)
+                  )
+        # Aggregate the results from all workers
         validation_loss_cum = self.comm.reduce(validation_loss, op=MPI.SUM, root=0)
         validation_accuracy_cum = self.comm.reduce(validation_accuracy, op=MPI.SUM, root=0)
         training_loss_cum = self.comm.reduce(training_loss, op=MPI.SUM, root=0)
@@ -334,16 +255,17 @@ class HybridSGDTrainer:
             wandb.log(result_dict)
             self.history.append(result_dict)
             print(f"Rank {self.rank}: Aggregated results: " +
-                "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
-                .format(self.steps,
-                        training_loss,
-                        validation_loss,
-                        validation_accuracy)
-            )
+                  "Steps: {:5.0f}, Training loss: {:.4f}, Validation loss: {:.4f}, Validation accuracy: {:.2f}"
+                  .format(self.steps,
+                          training_loss,
+                          validation_loss,
+                          validation_accuracy)
+                  )
 
         self.model.train()
 
     def copy_to_model(self, model_copy_tensor):
+        # Copy the model parameters from the model_copy_tensor to the model
         counter = 0
         if not self.is_cuda_aware:
             for param in self.model.parameters():
@@ -357,6 +279,7 @@ class HybridSGDTrainer:
                 counter += t.nelement()
 
     def model_to_copy(self, model_copy_tensor):
+        # Copy the model parameters from the model to the model_copy_tensor
         counter = 0
         if not self.is_cuda_aware:
             for param in self.model.parameters():
@@ -370,8 +293,8 @@ class HybridSGDTrainer:
                 counter += t.nelement()
 
     def get_flat_model(self):
+        # Get the model parameters as a flat tensor
         model_flat = []
         for param in self.model.parameters():
             model_flat.append(param.data.view(-1))
         return torch.cat(model_flat)
-

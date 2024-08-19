@@ -6,38 +6,24 @@ import torch
 
 from datasets.bracket import BracketTokenizer, BracketDataset
 
-EXTRACTED_DATASETS = ['birds', 'flowers', 'pets', 'food101', 'bracket']
-DATASETS = EXTRACTED_DATASETS + ['fmnist', 'year_pred', 'mnist', 'cifar10', 'cifar100']
-NUM_CLASSES = {'birds': 500,
-               'flowers': 102,
-               'cifar10': 10,
-               'pets': 37,
-               'food101': 101,
-               'fmnist': 10,
-               'year_pred': 1,
+EXTRACTED_DATASETS = ['bracket']
+DATASETS = EXTRACTED_DATASETS + ['mnist', 'cifar10', 'cifar100']
+NUM_CLASSES = {'cifar10': 10,
                'mnist': 10,
                'cifar100': 100,
                'bracket': 2,
                }
 INPUT_DIM = {'mnist': [1, 28, 28],
-             'fmnist': [1, 28, 28],
              'cifar10': [3, 32, 32],
              'cifar100': [3, 32, 32],
-             'flowers': [3, 224, 224],
-             'birds': [3, 224, 224],
-             'pets': [3, 224, 224],
-             'food101': [3, 224, 224],
-             'year_pred': [90],
              'bracket': [514],
              }
 
 DATA_REPO = "data"
 
+
 def get_criterion(dataset_name, reduction='mean'):
-    if dataset_name == "year_pred":
-        return torch.nn.MSELoss(reduction=reduction)
-    else:
-        return torch.nn.CrossEntropyLoss(reduction=reduction)
+    return torch.nn.CrossEntropyLoss(reduction=reduction)
 
 
 class CustomDataset(Dataset):

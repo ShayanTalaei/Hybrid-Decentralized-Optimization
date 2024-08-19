@@ -6,7 +6,6 @@ import argparse
 from utils import run
 import os
 import mpi4py
-from mpi4py.util import dtlib
 from mpi4py import MPI
 import wandb
 
@@ -25,11 +24,9 @@ if __name__ == "__main__":
     parser.add_argument("--conv_number", default=2, type=int, help="The number of convolutional layers in the model.")
     parser.add_argument("--f_batch_size", default=20, type=int, help="The first order optimizer batch size.")
     parser.add_argument("--z_batch_size", default=100, type=int, help="The zero order optimizer batch size.")
-    parser.add_argument("--plot", action="store_true", help="Whether to plot the training and validation curves.")
     parser.add_argument("--lr0", default=0.01, type=float, help="The learning rate for zero-order optimizers.")
     parser.add_argument("--lr1", default=0.001, type=float, help="The learning rate for first-order optimizers.")
-    parser.add_argument("--rv", default=200, type=int, help="The number of random vectors to use for zeroth-order "
-                                                            "optimizers.")
+    parser.add_argument("--rv", default=200, type=int, help="The number of random vectors to use for zeroth-order optimizers.")
     parser.add_argument("--steps", default=600, type=int, help="The learning steps for the optimizers.")
     parser.add_argument("--log_period", default=10, type=int, help="The log period.")
     parser.add_argument("--fn", default=3, type=int, help="The number of first-order optimizers.")
@@ -37,34 +34,20 @@ if __name__ == "__main__":
     parser.add_argument("--save", action="store_true", help="Whether to save the trained model.")
     parser.add_argument("--path", default="./", help="The directory where the trained model should be saved.")
     parser.add_argument("--criterion", default="cross_entropy", help="The loss function to use for training.")
-    parser.add_argument("--model", default="transformer", help="The model to use for training. If None, a default model is "
-                                                          "used based on the given arguments.")
+    parser.add_argument("--model", default="transformer", help="The model to use for training. If None, a default model is used based on the given arguments.")
     parser.add_argument("--freeze_model", action="store_true", help="Whether to freeze the model during training.")
     parser.add_argument("--scheduler", action="store_true", help="Whether to use a learning rate scheduler.")
-    parser.add_argument("--scheduler_warmup_steps", default=50, type=int, help="The number of warmup steps for the "
-                                                                              "scheduler.")
-    parser.add_argument("--warmup_steps", default=50, type=int, help="The number of warmup steps before starting the "
-                                                                    "communication.")
+    parser.add_argument("--scheduler_warmup_steps", default=50, type=int, help="The number of warmup steps for the scheduler.")
+    parser.add_argument("--warmup_steps", default=50, type=int, help="The number of warmup steps before starting the communication.")
     parser.add_argument("--momentum0", default=0.0, type=float, help="The momentum parameter for the zeroth optimizer.")
     parser.add_argument("--momentum1", default=0.0, type=float, help="The momentum parameter for the first optimizer.")
     parser.add_argument("--f_grad", default="first_order", help="The gradient mode for the first-order.")
     parser.add_argument("--z_grad", default="zeroth_order_rge", help="The gradient mode for the zeroth-order.")
     parser.add_argument("--v_step", default=0.0001, type=float, help="The step size for the zeroth-order optimizer.")
-    # parser.add_argument("--v_step", default=0.001, type=float, help="The step size for the zeroth-order optimizer.")
-    # parser.add_argument("--v_step", default=1, type=float, help="The step size for the zeroth-order optimizer.")
     parser.add_argument("--out_channels", default=8, type=int, help="The number of output channels for the cnn model.")
     parser.add_argument("--file_name", default=None, help="The name of the file to save the trained model.")
     parser.add_argument("--mpi_cuda_aware", action="store_true", help="Whether MPI is CUDA aware.")
-    parser.add_argument('--weight_decay', default=0.0,
-                        type=float)
-
-    # transformer arguments
-    parser.add_argument('--dropout', default=0.1, type=float)
-    parser.add_argument('--n_head', default=2, type=int)
-    parser.add_argument('--n_layer', default=2, type=int, help='number of layers in the transformer')
-    parser.add_argument('--n_embd', default=4, type=int)
-    parser.add_argument('--bias', default=False, type=bool)
-
+    parser.add_argument('--weight_decay', default=0.0, type=float)
     parser.add_argument('--concurrency', default=100, type=int)
     parser.add_argument("--exchange_period", default=0, type=int, help="The exchange period.")
     parser.add_argument("--wandb_group", default=None, help="The wandb group.")
@@ -72,54 +55,12 @@ if __name__ == "__main__":
     parser.add_argument("--cuda_dsa", action="store_true", help="Whether to use CUDA DSA.")
     parser.add_argument("--clear_cache", action="store_true", help="Whether to clear the cache.")
 
-
-    # mpi4py.rc.threads = False
-    # MPI.Finalize()
-    # os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
-
-    # required = mpi4py.MPI.THREAD_MULTIPLE
-    # data = torch.zeros(10, dtype=torch.float64)  # Integer array of size 10
-    # win = MPI.Win.Create(data, disp_unit=data.itemsize, comm=MPI.COMM_WORLD)
-    # buf = MPI.memory.fromaddress(data.data_ptr(),
-    #                              data.nelement() * data.element_size())
-    # MPI.Win.Create(buf, comm=MPI.COMM_WORLD)
-    # memory = torch.ones((1, 1))
-    # buf = mpi4py.MPI.memory.fromaddress(memory.data_ptr(), memory.numel() * memory.element_size())
-    # mpi4py.MPI.Win.Create(buf, comm=mpi4py.MPI.COMM_WORLD, disp_unit=memory.element_size())
-
-    # print('rank:', mpi4py.MPI.COMM_WORLD.Get_rank(), 'required:', required)
-    # import numpy as np
-    # from mpi4py import MPI
-    # from mpi4py.util import dtlib
-    #
-    # comm = MPI.COMM_WORLD
-    # rank = comm.Get_rank()
-    #
-    # # datatype = MPI.FLOAT
-    # # np_dtype = dtlib.to_numpy_dtype(datatype)
-    # # itemsize = datatype.Get_size()
-    #
-    # # N = 10
-    # # win_size = N * itemsize if rank == 0 else 0
-    # data = torch.zeros(10, dtype=torch.float64)  # Integer array of size 10
-    # buf = MPI.memory.fromaddress(data.data_ptr(),
-    #                              data.nelement() * data.element_size())
-    # win = MPI.Win.Allocate(data.nelement() * data.element_size(), comm=comm)
-    #
-    # # buf = np.empty(N, dtype=np_dtype)
-    # if rank == 0:
-    #     # buf.fill(42)
-    #     win.Lock(rank=0)
-    #     win.Put(buf, target_rank=0)
-    #     win.Unlock(rank=0)
-    #     comm.Barrier()
-    # else:
-    #     comm.Barrier()
-    #     win.Lock(rfank=0)
-    #     win.Get(buf, target_rank=0)
-    #     win.Unlock(rank=0)
-    #     print('rank:', rank, 'buf:', buf)
-    #     # assert np.all(buf == 42)
+    # transformer arguments
+    parser.add_argument('--dropout', default=0.1, type=float)
+    parser.add_argument('--n_head', default=2, type=int)
+    parser.add_argument('--n_layer', default=2, type=int, help='number of layers in the transformer')
+    parser.add_argument('--n_embd', default=4, type=int)
+    parser.add_argument('--bias', default=False, type=bool)
 
     # Parse the arguments
     args = parser.parse_args()
@@ -137,14 +78,11 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
-
     # Check if CUDA is available and set the device accordingly
     device = 'cpu'
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
         device = f'cuda:{rank % gpu_count}'
-        # gpu_list = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
-        # device = gpu_list[rank % len(gpu_list)]
 
     # Convert string arguments to appropriate data types
     if args.verbose:
@@ -180,7 +118,6 @@ if __name__ == "__main__":
         print(f"Concurrency: {args.concurrency}")
         print(f"Exchange period: {args.exchange_period}")
         print(f"Log period: {args.log_period}")
-        print(f"Plot: {args.plot}")
         print(f"File name: {args.file_name}")
         print(f"Path: {args.path}")
         print(f"Is CUDA aware: {args.mpi_cuda_aware}")
@@ -205,7 +142,6 @@ if __name__ == "__main__":
                file_name=args.file_name,
                model_name=args.model,
                freeze_model=args.freeze_model,
-               plot=args.plot,
                random_vecs=args.rv,
                momentum0=args.momentum0,
                momentum1=args.momentum1,

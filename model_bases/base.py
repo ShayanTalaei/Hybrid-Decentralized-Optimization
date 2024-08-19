@@ -4,8 +4,14 @@ import numpy as np
 
 
 class EnhancedModel(nn.Module):
+    """
+    A base class for models.
+    """
 
     def __init__(self, **kwargs):
+        """
+        Initialize the model.
+        """
         super().__init__()
         self.acc_def = "class number"
         device_name = kwargs.get("device", 'cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -13,9 +19,17 @@ class EnhancedModel(nn.Module):
         self.to(self.device)
 
     def get_sd(self):
+        """
+        Get the state dict.
+        """
         return self.state_dict()
 
     def evaluate(self, dataloader, criterion):
+        """
+        Evaluate the model.
+        :param dataloader: The dataloader.
+        :param criterion: The criterion.
+        """
         model = self
         model_initial_training = model.training
         model.eval()
@@ -66,6 +80,7 @@ class CustomNN(EnhancedModel):
         :param activation: The activation function to use.
         :param sigmoid_output: Whether to use a sigmoid activation on the output.
         :param conv_number: The number of convolutional layers to use.
+        :param out_channels: The number of output channels for the convolutional layers.
         """
         super().__init__(**kwargs)
         self.seq = nn.Sequential()
@@ -110,6 +125,9 @@ class CustomNN(EnhancedModel):
         return self.seq(x)
 
     def _init_weights(self, module):
+        """
+        Initialize the weights.
+        """
         module.weight.data.uniform_(-100, 100)
         module.bias.data.zero_()
 

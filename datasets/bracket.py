@@ -9,6 +9,9 @@ import numpy as np
 
 
 class BracketTokenizer:
+    """
+    Tokenizer for the Brackets dataset
+    """
     def __init__(self, pad_token="<pad>", unk_token="<unk>", bos_token="<start>", eos_token="<stop>"):
         self.vocab = [bos_token, eos_token, pad_token, unk_token] + ['(', ')']
         self.pad_token = pad_token
@@ -50,13 +53,14 @@ class BracketTokenizer:
         """
         tokens = [self.index_to_word[idx] for idx in sequence.cpu().detach().numpy()]
         if skip_special_tokens:
-            tokens = [token for token in tokens if token not in [self.pad_token, self.bos_token, self.eos_token, self.unk_token]]
+            tokens = [token for token in tokens if
+                      token not in [self.pad_token, self.bos_token, self.eos_token, self.unk_token]]
         return "".join(tokens)
 
 
 class BracketDataset(Dataset):
     """
-    SADataset in Pytorch
+    Brackets Dataset in Pytorch
     """
 
     def __init__(self, data_repo, tokenizer, sent_max_length=512):
@@ -76,11 +80,10 @@ class BracketDataset(Dataset):
 
         with jsonlines.open(data_repo, "r") as reader:
             for sample in tqdm(reader.iter()):
-                # print(sample)
                 self.text_samples.append(sample)
                 input_ids = self.tokenizer.encode(sample['input'], max_length=sent_max_length)
-                # self.samples.append({"ids": input_ids[:-1], "label": input_ids[1:]})
-                self.samples.append({"ids": torch.tensor(input_ids), "label": torch.tensor(self.label_to_id[sample['label']])})
+                self.samples.append(
+                    {"ids": torch.tensor(input_ids), "label": torch.tensor(self.label_to_id[sample['label']])})
 
     def __len__(self):
         return len(self.samples)
@@ -88,7 +91,7 @@ class BracketDataset(Dataset):
     def __getitem__(self, index):
         cp = deepcopy(self.samples[index])
         return cp['ids'], cp['label']
-        # return self.samples[index]['ids'], self.samples[index]['label']
+
     def __padding(self, inputs, max_length=-1):
         """
         Pad inputs to the max_length.
@@ -123,4 +126,3 @@ class BracketDataset(Dataset):
         tensor_labels = torch.tensor([sample["label"] for sample in batch])
 
         return tensor_batch_ids, tensor_labels
-    

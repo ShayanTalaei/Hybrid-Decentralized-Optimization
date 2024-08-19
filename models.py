@@ -1,13 +1,8 @@
-import numpy as np
 import torch
-from torch import nn
-import torchvision.models as models
-from torch.nn import Transformer
-from torchvision.models import ResNet101_Weights, ResNet50_Weights, ResNet18_Weights
 
 from model_bases.base import CustomNN
 from datasets.datasets import get_model_shape
-from model_bases.resnet_base import resnet20_cifar, ResNetCifar, ResNetModel
+from model_bases.resnet_base import ResNetModel
 from model_bases.transformer_base import TransformerModel
 
 
@@ -17,7 +12,6 @@ def get_temp_state_dict(input_shape, n_class, conv_number=2, hidden=128, num_lay
     hidden_layers.append(n_class)
     if model_name == 'resnet':
         model = ResNetModel(n_class, freeze=freeze_model, device=device)
-        # model = resnet20_cifar()
     elif model_name == 'transformer':
         vars(config)['device'] = device
         vars(config)['n_class'] = n_class
@@ -44,7 +38,6 @@ def get_model(dataset_name, conv_number=2, hidden=128, num_layer=2, out_channels
     hidden_layers.append(n_class)
     if kwargs['model_name'] == 'resnet':
         model = ResNetModel(n_class, freeze=kwargs['freeze_model'], **kwargs)
-        # model = resnet20_cifar()
     elif kwargs['model_name'] == 'transformer':
         vars(config)['device'] = kwargs['device']
         vars(config)['n_class'] = n_class
