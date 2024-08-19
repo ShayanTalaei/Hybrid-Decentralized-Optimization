@@ -53,7 +53,7 @@ The source code for the paper "Hybrid Decentralized Optimization: Leveraging Bot
 
    Example:
    ```bash
-   mpiexec --oversubscribe --allow-run-as-root -np 20 python main.py --scheduler_warmup_steps 100 --warmup_steps 100 --seed 0 --steps 1000 --concurrency 100 --fn 4 --dataset bracket --model transformer --scheduler --z_grad zeroth_order_forward-mode_AD_sim --lr0=0.1 --momentum0=0.8 --rv=64 --z_batch_size=256 --f_batch_size=128 --lr1=0.05 --momentum1=0.8 --wandb_group brackets_16ZO_4FO
+   mpiexec --oversubscribe --allow-run-as-root -np 20 python main.py --scheduler_warmup_steps 100 --warmup_steps 100 --seed 0 --steps 1000 --fn 4 --dataset bracket --model transformer --scheduler --z_grad zeroth_order_forward-mode_AD_sim --lr0=0.1 --momentum0=0.8 --rv=64 --z_batch_size=256 --f_batch_size=128 --lr1=0.05 --momentum1=0.8 --wandb_group brackets_16ZO_4FO
    ```
 
 ## Datasets
