@@ -245,13 +245,21 @@ class HybridSGDTrainer:
         validation_loss_cum = self.comm.reduce(validation_loss, op=MPI.SUM, root=0)
         validation_accuracy_cum = self.comm.reduce(validation_accuracy, op=MPI.SUM, root=0)
         training_loss_cum = self.comm.reduce(training_loss, op=MPI.SUM, root=0)
+        validation_loss_mean = np.empty(1)
+        if self.rank == 0:
+            validation_loss_mean[0] = validation_loss_cum / self.size
+        self.comm.Bcast(validation_loss_mean, root=0)
+        var_i = (validation_loss - validation_loss_mean[0]) ** 2
+        var_ = self.comm.reduce(var_i, op=MPI.SUM, root=0)
         if self.rank == 0:
             validation_loss = validation_loss_cum / self.size
             validation_accuracy = validation_accuracy_cum / self.size
             training_loss = training_loss_cum / self.size
+            std_ = np.sqrt(var_ / self.size)
 
             result_dict = {'step': int(self.steps), 'train/loss': float(training_loss),
-                           'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy)}
+                           'eval/loss': float(validation_loss), 'eval/accuracy': float(validation_accuracy),
+                           'eval/std': float(std_)}
             wandb.log(result_dict)
             self.history.append(result_dict)
             print(f"Rank {self.rank}: Aggregated results: " +
